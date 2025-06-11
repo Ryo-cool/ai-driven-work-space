@@ -1,0 +1,30 @@
+{
+  "name": "mastra-agents",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "mastra dev",
+    "build": "mastra build",
+    "start": "mastra start"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "type": "module",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "dependencies": {
+    "@mastra/core": "^0.10.5",
+    "@mastra/libsql": "^0.10.2",
+    "@mastra/memory": "^0.10.3",
+    "zod": "^3.25.61"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "mastra": "^0.10.5",
+    "typescript": "^5.8.3"
+  }
+}
