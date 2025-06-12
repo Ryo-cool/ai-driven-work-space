@@ -45,7 +45,7 @@ export default function Editor({ documentId, userId }: EditorProps) {
         },
       }),
       Placeholder.configure({
-        placeholder: '開始入力或使用 "/" 呼叫 AI 助手...',
+        placeholder: '入力を開始するか "/" でAIアシスタントを呼び出してください...',
         showOnlyWhenEditable: true,
         showOnlyCurrent: true,
       }),
@@ -78,7 +78,7 @@ export default function Editor({ documentId, userId }: EditorProps) {
   if (!document) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="animate-pulse text-gray-500">載入中...</div>
+        <div className="animate-pulse text-gray-500">読み込み中...</div>
       </div>
     )
   }

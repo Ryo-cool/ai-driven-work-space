@@ -68,7 +68,7 @@ export default function Presence({ documentId, currentUserId }: PresenceProps) {
       </div>
       {activeUsers.length > 0 && (
         <span className="text-sm text-gray-500 ml-2">
-          {activeUsers.length} {activeUsers.length === 1 ? '位用戶' : '位用戶'}正在編輯
+          {activeUsers.length}人が編集中
         </span>
       )}
     </div>

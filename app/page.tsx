@@ -48,7 +48,7 @@ export default function HomePage() {
     setIsCreating(true)
     try {
       const newDoc = await createDocument({
-        title: '無標題文檔',
+        title: '無題のドキュメント',
         content: '',
         authorId: testIds.userId,
         workspaceId: testIds.workspaceId,
@@ -68,10 +68,10 @@ export default function HomePage() {
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            AI 驅動協作工作區
+            AI駆動コラボレーションワークスペース
           </h1>
           <p className="text-lg text-gray-600">
-            使用 AI 助手進行實時協作，讓創意無限延伸
+            AIアシスタントを使ってリアルタイムで協力し、創造性を無限に広げよう
           </p>
         </div>
 
@@ -82,7 +82,7 @@ export default function HomePage() {
             className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="mr-2" size={20} />
-            {isCreating ? '創建中...' : !testIds ? '初期化中...' : '新建文檔'}
+            {isCreating ? '作成中...' : !testIds ? '初期化中...' : '新しいドキュメント'}
           </button>
         </div>
 
@@ -97,7 +97,7 @@ export default function HomePage() {
                 <FileText className="text-blue-600" size={24} />
                 <div className="flex items-center space-x-2 text-sm text-gray-500">
                   <Users size={16} />
-                  <span>{doc.collaboratorIds?.length || 0}</span>
+                  <span>{doc.collaborators?.length || 0}</span>
                 </div>
               </div>
               
@@ -108,7 +108,7 @@ export default function HomePage() {
               <div className="flex items-center text-sm text-gray-500">
                 <Clock size={14} className="mr-1" />
                 <span>
-                  {new Date(doc.lastModified).toLocaleDateString('zh-TW')}
+                  {new Date(doc.updatedAt).toLocaleDateString('ja-JP')}
                 </span>
               </div>
             </Link>
@@ -119,7 +119,7 @@ export default function HomePage() {
           <div className="text-center py-12">
             <FileText className="mx-auto text-gray-300 mb-4" size={64} />
             <p className="text-gray-500 text-lg">
-              還沒有任何文檔，點擊上方按鈕創建第一個！
+              まだドキュメントがありません。上のボタンをクリックして最初のドキュメントを作成しましょう！
             </p>
           </div>
         )}
