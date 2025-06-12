@@ -14,7 +14,10 @@
     "clean": "rm -rf .next node_modules/.cache",
     "setup": "npm install",
     "ci": "npm run typecheck && npm run lint && npm run build",
-    "audit:fix": "npm audit fix"
+    "audit:fix": "npm audit fix",
+    "type:explore": "npx ts-node scripts/type-explorer.ts",
+    "type:check:mastra": "tsc --noEmit --project ./mastra-agents/tsconfig.json",
+    "check:all": "npm run typecheck && npm run lint && npm run build"
   },
   "dependencies": {
     "@floating-ui/react": "^0.27.12",
@@ -46,6 +49,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }

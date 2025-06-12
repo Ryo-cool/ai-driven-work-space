@@ -154,8 +154,12 @@ export default defineSchema({
       v.literal('completed'),
       v.literal('failed')
     ),
+    progress: v.optional(v.number()), // 進行状況（0-100）
+    progressMessage: v.optional(v.string()), // 進行状況メッセージ
+    lastProgressUpdate: v.optional(v.number()), // 最後の進行状況更新時刻
     processingTime: v.optional(v.number()),
     errorMessage: v.optional(v.string()),
+    retryCount: v.optional(v.number()), // リトライ回数
     createdAt: v.number(),
     completedAt: v.optional(v.number()),
   })

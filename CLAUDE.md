@@ -91,6 +91,8 @@ GitHub ActionsによるPR時の自動CI：
 ## アーキテクチャ設計
 
 ### ディレクトリ構造
+
+**プロジェクト構成 (2025/06/12更新):**
 ```
 ai-driven-work-space/
 ├── app/                    # Next.js App Router
@@ -101,12 +103,14 @@ ai-driven-work-space/
 │   ├── schema.ts         # データベーススキーマ
 │   ├── documents.ts      # ドキュメント操作
 │   └── collaboration.ts  # リアルタイムコラボレーション
-├── mastra-agents/        # Mastraエージェント
+├── mastra-agents/        # Mastraエージェント（一時的にプレースホルダー）
 │   ├── agents/          # AIエージェント定義
-│   ├── tools/           # カスタムAIツール
-│   └── workflows/       # マルチステップワークフロー
-├── workers/              # Cloudflare Workers
+│   ├── tools/           # カスタムAIツール（型定義のみ）
+│   └── tsconfig.json    # 独立したTypeScript設定
+├── workers/              # Cloudflare Workers（独立プロジェクト）
 │   └── ai-processor/     # エッジAI処理
+│       ├── src/         # Workerソースコード
+│       └── tsconfig.json # Worker専用TypeScript設定
 ├── .env.local           # 環境変数設定
 └── package.json         # 依存関係とスクリプト
 ```
@@ -163,6 +167,230 @@ CLOUDFLARE_ACCOUNT_ID=
 - **AI応答速度**: Cloudflare Workersでのエッジ処理でレスポンス時間短縮
 - **型安全性**: TypeScriptの型定義を活用したエンドツーエンドの型安全性
 - **エラーハンドリング**: AIの応答エラーやネットワーク切断時の適切な処理
+
+## 🔧 型安全性ベストプラクティス
+
+### 型エラー対策の戦略的アプローチ
+
+新しいライブラリ導入時や型エラーが発生した場合の対処法：
+
+#### 1. 事前調査フェーズ
+```bash
+# 型構造調査用スクリプト実行
+npm run type:explore        # Mastra型構造調査
+node scripts/convex-type-analysis.cjs  # Convex型構造調査
+npm run type:check:mastra   # Mastraプロジェクト型チェック
+npm run check:all           # 全体型チェック
+```
+
+#### 2. Mastra型パターン
+
+**✅ 正しいMastraツール実装パターン:**
+```typescript
+import { createTool } from '@mastra/core'
+import { z } from 'zod'
+
+export const correctTool = createTool({
+  id: 'my-tool',
+  description: 'Tool description',
+  inputSchema: z.object({
+    text: z.string(),
+    options: z.object({}).optional(),
+  }),
+  outputSchema: z.object({
+    result: z.string(),
+  }),
+  execute: async (context) => {
+    // ✅ 正しい方法: context.context でinputアクセス
+    const { text, options } = context.context;
+    return { result: `Processed: ${text}` };
+  },
+});
+```
+
+**❌ 間違ったパターン (TypeScriptエラーになる):**
+```typescript
+execute: async ({ input }) => {
+  // ❌ Property 'input' does not exist on ToolExecutionContext
+  const { text } = input;
+  return { result: text };
+}
+```
+
+**🛡️ 型安全なMastraエージェント設定:**
+```typescript
+import { Agent } from '@mastra/core'
+import { openai } from '@ai-sdk/openai'  // 必須依存関係
+
+export const aiAgent = new Agent({
+  name: 'ai-assistant',  // ✅ nameプロパティ使用
+  description: 'AI assistant description',
+  instructions: 'Agent instructions here',
+  model: openai('gpt-4o'),  // ✅ AI SDK直接使用
+});
+```
+
+#### 3. Convex型パターン
+
+**✅ 正しいConvex実装パターン:**
+```typescript
+import { v } from 'convex/values'
+import { mutation, query, action } from './_generated/server'
+
+// Mutation例
+export const createDocument = mutation({
+  args: {
+    title: v.string(),
+    content: v.string(),
+    userId: v.id('users'),
+    metadata: v.optional(v.object({
+      tags: v.array(v.string()),
+      priority: v.union(v.literal('high'), v.literal('medium'), v.literal('low'))
+    }))
+  },
+  handler: async (ctx, args) => {
+    // ✅ 型安全なargs使用 - 分割代入推奨
+    const { title, content, userId, metadata } = args;
+    
+    // ✅ データベース操作
+    const documentId = await ctx.db.insert('documents', {
+      title,
+      content,
+      userId,
+      metadata,
+      createdAt: Date.now(),
+    });
+    
+    return documentId;
+  },
+});
+
+// Query例
+export const getDocument = query({
+  args: { id: v.id('documents') },
+  handler: async (ctx, args) => {
+    // ✅ 型安全なクエリ + nullチェック必須
+    const document = await ctx.db.get(args.id);
+    if (!document) {
+      throw new Error('Document not found');
+    }
+    return document;
+  },
+});
+
+// Action例 (外部API呼び出し用)
+export const processWithAI = action({
+  args: {
+    documentId: v.id('documents'),
+    taskType: v.union(
+      v.literal('translate'),
+      v.literal('summarize'),
+      v.literal('improve')
+    ),
+    parameters: v.optional(v.any())
+  },
+  handler: async (ctx, args) => {
+    // ✅ 外部API呼び出し可能
+    const result = await callExternalAI(args.taskType, args.parameters);
+    
+    // ✅ 他のConvex関数呼び出し
+    await ctx.runMutation(api.documents.updateDocument, {
+      id: args.documentId,
+      content: result
+    });
+    
+    return result;
+  },
+});
+```
+
+#### 4. 統合パターン（Convex + Mastra）
+
+**✅ 推奨統合パターン:**
+```typescript
+// Convex Action内でMastraツールを呼び出し
+export const processDocumentWithAI = action({
+  args: {
+    documentId: v.id('documents'),
+    operation: v.union(
+      v.literal('translate'),
+      v.literal('summarize'),
+      v.literal('improve')
+    )
+  },
+  handler: async (ctx, args) => {
+    // 1. Convexからデータ取得
+    const document = await ctx.runQuery(api.documents.get, { 
+      id: args.documentId 
+    });
+    
+    // 2. Mastraツール実行
+    const result = await executeToolSafely({
+      operation: args.operation,
+      text: document.content
+    });
+    
+    // 3. 結果をConvexに保存
+    await ctx.runMutation(api.documents.update, {
+      id: args.documentId,
+      content: result
+    });
+    
+    return { success: true, result };
+  },
+});
+```
+
+#### 5. ファイル命名規則
+
+**Convex命名制約:**
+- ✅ `camelCase.ts` (例: `aiProviders.ts`)
+- ❌ `kebab-case.ts` (例: `ai-providers.ts`) - Convexエラーになる
+
+**Mastra命名規則:**
+- ✅ `kebab-case` または `camelCase` 両方OK
+- ✅ ES Module対応 (`"type": "module"` in package.json)
+
+#### 6. トラブルシューティング手順
+
+1. **🔍 型エラー発生時:**
+   ```bash
+   # 1. 型構造を確認
+   console.log('Context keys:', Object.keys(context))
+   
+   # 2. 型定義ファイルを直接確認
+   find node_modules/@mastra -name "*.d.ts" | head -5
+   
+   # 3. 最小限のテストケースで検証
+   ```
+
+2. **🧪 新しいツール作成時:**
+   ```typescript
+   // 既存の動作確認済みツールをコピーして修正
+   // context.context パターンを必ず使用
+   // 型ガードを実装して安全性確保
+   ```
+
+3. **📚 ドキュメント不足時:**
+   - 実際の型定義ファイル (`node_modules/@mastra/core/dist/index.d.ts`) を確認
+   - 既存の動作するコードをテンプレートとして使用
+   - CLAUDE.mdに学んだパターンを追記
+
+4. **🔄 継続的改善:**
+   ```bash
+   # CI/CDパイプラインで型チェック必須化
+   npm run check:all  # 型チェック + lint + build
+   ```
+
+### 型安全性確保のツール
+
+```bash
+# 定期的に実行すべきコマンド
+npm run typecheck              # TypeScript型チェック
+npm run type:check:mastra      # Mastraプロジェクト専用型チェック
+npm run lint                   # ESLintコード品質チェック
+npm run build                  # ビルド時型検証
+```
 
 ## 開発の焦点
 
@@ -232,15 +460,21 @@ CLOUDFLARE_ACCOUNT_ID=
   - [x] PRテンプレート & Issueテンプレート
   - [x] 自動ラベル付け設定
   - [x] package.jsonスクリプト最適化
+  - [x] プロジェクト構成の最適化（tsconfig.json分離、.gitignore整理）
+  - [x] CI/CDパイプライン完全安定化
 - [ ] Phase 3: 高度な機能
   - [ ] コンテンツ自動変換
   - [ ] コード実行環境
   - [ ] Cloudflareエッジ最適化
 
 ### 現在の進行状況
-**Current Phase**: Phase 2 完了 + 開発品質向上完了 - Phase 3へ  
-**Last Updated**: 2025/01/06  
-**Notes**: **マイルストーン達成！** AI駆動リアルタイムコラボレーション機能完全実装 + プロダクション品質の開発環境構築完了。Makefileと自動CI/CDでチーム開発対応
+**Current Phase**: Phase 2 完了 + 開発品質向上完了 + CI/CD安定化完了 - Phase 3へ  
+**Last Updated**: 2025/06/12  
+**Notes**: 
+- **マイルストーン達成！** AI駆動リアルタイムコラボレーション機能完全実装
+- **CI/CD完全安定化:** 全ての型エラー解消、ビルドパイプライン修正
+- **プロジェクト構成最適化:** TypeScript設定の整理、サブプロジェクト分離
+- **Mastra統合:** 一時的にプレースホルダー化（将来の本格統合準備完了）
 
 ### 次のタスク（Phase 3: 高度な機能）
 1. コンテンツ自動変換（テキスト→Mermaid図、マインドマップ、スライド）

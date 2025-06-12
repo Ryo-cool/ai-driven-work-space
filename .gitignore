@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# workers and agents (independent projects)
+/workers/*/node_modules
+/mastra-agents/node_modules

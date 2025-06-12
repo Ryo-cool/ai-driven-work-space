@@ -7,6 +7,15 @@ import { Id } from '@/convex/_generated/dataModel'
 import Link from 'next/link'
 import { Plus, FileText, Users, Clock } from 'lucide-react'
 
+interface Document {
+  _id: Id<'documents'>
+  title: string
+  content: string
+  createdAt: number
+  updatedAt: number
+  collaborators?: Id<'users'>[]
+}
+
 export default function HomePage() {
   const [isCreating, setIsCreating] = useState(false)
   const [testIds, setTestIds] = useState<{userId: Id<'users'>, workspaceId: Id<'workspaces'>} | null>(null)
@@ -92,7 +101,7 @@ export default function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {documents?.map((doc) => (
+          {documents?.map((doc: Document) => (
             <Link
               key={doc._id}
               href={`/workspace/${doc._id}`}

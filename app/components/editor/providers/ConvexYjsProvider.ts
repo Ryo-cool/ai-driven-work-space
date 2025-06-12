@@ -5,6 +5,13 @@ import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
 import { useEffect, useRef } from 'react'
 
+interface YjsUpdate {
+  _id: string
+  userId: Id<'users'>
+  data: string
+  timestamp: number
+}
+
 export interface ConvexYjsProviderOptions {
   documentId: Id<'documents'>
   userId: Id<'users'>
@@ -167,15 +174,15 @@ export function useConvexYjsProvider(
         providerRef.current = null
       }
     }
-  }, [documentId, userId, sendUpdate, isInitializedRef.current])
+  }, [documentId, userId, sendUpdate])
 
   // Convexからの更新を適用（初期化後のリアルタイム更新のみ）
   useEffect(() => {
     if (updates && updates.length > 0 && providerRef.current && isInitializedRef.current) {
       // 自分以外のユーザーからの更新のみを適用
-      const otherUsersUpdates = updates.filter(update => update.userId !== userId)
+      const otherUsersUpdates = updates.filter((update: YjsUpdate) => update.userId !== userId)
       
-      otherUsersUpdates.forEach(update => {
+      otherUsersUpdates.forEach((update: YjsUpdate) => {
         if (providerRef.current) {
           providerRef.current.applyUpdateFromConvex(update.data, update._id)
         }
@@ -183,11 +190,11 @@ export function useConvexYjsProvider(
       
       // 最新のタイムスタンプを更新
       if (updates.length > 0) {
-        const latestUpdateTimestamp = Math.max(...updates.map(u => u.timestamp))
+        const latestUpdateTimestamp = Math.max(...updates.map((u: YjsUpdate) => u.timestamp))
         lastProcessedTimestampRef.current = latestUpdateTimestamp
       }
     }
-  }, [updates, isInitializedRef.current])
+  }, [updates, userId])
 
   return {
     ydoc: ydocRef.current,

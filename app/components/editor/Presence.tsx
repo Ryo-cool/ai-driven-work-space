@@ -20,6 +20,19 @@ interface UserPresence {
   color: string
 }
 
+interface PresenceData {
+  userId: Id<'users'>
+  isOnline: boolean
+  activity: string
+  cursor: {
+    position: number
+    selection?: {
+      start: number
+      end: number
+    }
+  }
+}
+
 const PRESENCE_COLORS = [
   '#FF6B6B', '#4ECDC4', '#45B7D1', '#F7DC6F', 
   '#BB8FCE', '#85C1F2', '#F8B400', '#52C41A'
@@ -32,8 +45,8 @@ export default function Presence({ documentId, currentUserId }: PresenceProps) {
   useEffect(() => {
     if (presenceData) {
       const users = presenceData
-        .filter(p => p.userId !== currentUserId && p.isOnline && p.activity !== 'idle')
-        .map((presence, index) => ({
+        .filter((p: PresenceData) => p.userId !== currentUserId && p.isOnline && p.activity !== 'idle')
+        .map((presence: PresenceData, index: number) => ({
           userId: presence.userId,
           userName: presence.userId, // TODO: Get actual user name
           cursorPosition: presence.cursor.position,
