@@ -32,8 +32,8 @@ export default function Presence({ documentId, currentUserId }: PresenceProps) {
   useEffect(() => {
     if (presenceData) {
       const users = presenceData
-        .filter(p => p.userId !== currentUserId && p.isOnline && p.activity !== 'idle')
-        .map((presence, index) => ({
+        .filter((p: any) => p.userId !== currentUserId && p.isOnline && p.activity !== 'idle')
+        .map((presence: any, index: number) => ({
           userId: presence.userId,
           userName: presence.userId, // TODO: Get actual user name
           cursorPosition: presence.cursor.position,

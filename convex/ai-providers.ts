@@ -48,8 +48,8 @@ export async function callOpenAIAPI(prompt: AIPrompt): Promise<AIResponse> {
       content: data.choices[0]?.message?.content || '',
       usage: data.usage,
     }
-  } catch (error) {
-    if (error.name === 'AbortError') {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === 'AbortError') {
       return {
         success: false,
         error: 'OpenAI API request timeout'
@@ -118,8 +118,8 @@ export async function callAnthropicAPI(prompt: AIPrompt): Promise<AIResponse> {
         total_tokens: data.usage.input_tokens + data.usage.output_tokens,
       } : undefined,
     }
-  } catch (error) {
-    if (error.name === 'AbortError') {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === 'AbortError') {
       return {
         success: false,
         error: 'Anthropic API request timeout'

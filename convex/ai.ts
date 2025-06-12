@@ -396,9 +396,7 @@ async function processToSlides(text: string): Promise<string> {
     return generateBasicSlides(text)
   }
 
-  try {
-    const response = await callOpenAIAPI(
-      `Convert the following text into a presentation slide format.
+  const userPrompt = `Convert the following text into a presentation slide format.
       Create 3-5 slides with clear titles and bullet points.
       Format as Markdown with the following structure:
       
@@ -412,17 +410,18 @@ async function processToSlides(text: string): Promise<string> {
       etc.
       
       Text to convert:
-      ${text}`,
-      'You are an expert presentation designer who creates clear, engaging slides from text content.',
-      1500
-    )
+      ${text}`
 
-    if (response.success && response.content) {
-      return response.content
-    }
-  } catch (error) {
-    console.error('AI slides generation failed:', error)
+  const systemPrompt = 'You are an expert presentation designer who creates clear, engaging slides from text content.'
+  
+  const prompt = createAIPrompt(userPrompt, systemPrompt, { maxTokens: 1500 })
+  const response = await callAIWithFallback(prompt, 'openai')
+
+  if (response.success && response.content) {
+    return response.content
   }
+
+  console.error('AI slides generation failed:', response.error)
 
   // フォールバック: 基本的なスライドを生成
   return generateBasicSlides(text)

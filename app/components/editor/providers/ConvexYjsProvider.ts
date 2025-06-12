@@ -173,9 +173,9 @@ export function useConvexYjsProvider(
   useEffect(() => {
     if (updates && updates.length > 0 && providerRef.current && isInitializedRef.current) {
       // 自分以外のユーザーからの更新のみを適用
-      const otherUsersUpdates = updates.filter(update => update.userId !== userId)
+      const otherUsersUpdates = updates.filter((update: any) => update.userId !== userId)
       
-      otherUsersUpdates.forEach(update => {
+      otherUsersUpdates.forEach((update: any) => {
         if (providerRef.current) {
           providerRef.current.applyUpdateFromConvex(update.data, update._id)
         }
@@ -183,7 +183,7 @@ export function useConvexYjsProvider(
       
       // 最新のタイムスタンプを更新
       if (updates.length > 0) {
-        const latestUpdateTimestamp = Math.max(...updates.map(u => u.timestamp))
+        const latestUpdateTimestamp = Math.max(...updates.map((u: any) => u.timestamp))
         lastProcessedTimestampRef.current = latestUpdateTimestamp
       }
     }
