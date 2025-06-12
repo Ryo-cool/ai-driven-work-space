@@ -162,9 +162,14 @@ CLOUDFLARE_ACCOUNT_ID=
   - [x] コンポーネント設計方針
 - [ ] Phase 1: 基礎実装
   - [x] Convexスキーマ設計
-  - [ ] 基本エディタ機能
+  - [x] 基本エディタ機能
+    - [x] TipTapベースのエディタコンポーネント（Editor.tsx）
+    - [x] ツールバーコンポーネント（Toolbar.tsx）
+    - [x] Convex連携フック（useDocument.ts）
   - [ ] リアルタイム同期
-  - [ ] プレゼンス表示
+  - [x] プレゼンス表示
+    - [x] アクティブユーザー表示（Presence.tsx）
+    - [ ] リアルタイムカーソル位置（統合待ち）
 - [ ] Phase 2: AI統合
   - [ ] Mastraエージェント統合
   - [ ] インラインAIコマンド
@@ -177,9 +182,9 @@ CLOUDFLARE_ACCOUNT_ID=
 ### 現在の進行状況
 **Current Phase**: Phase 1 - 基礎実装  
 **Last Updated**: 2025/01/06  
-**Notes**: Convexスキーマの詳細設計完了。8つのテーブル設計、リアルタイムコラボレーション・AI統合・コメント機能を含む包括的なデータ基盤を構築
+**Notes**: エディタ基本機能実装中。TipTapベースのリッチテキストエディタ、ツールバー、プレゼンス表示、Convex連携フックを実装完了
 
 ### 次のタスク
-1. 基本エディタ機能の開発（React コンポーネント）
-2. Convexとの連携実装
-3. リアルタイム同期機能の実装
+1. AIコマンドパレット（CommandPalette.tsx）の実装
+2. ワークスペースページの作成とコンポーネント統合
+3. リアルタイム同期機能（Operational Transform）の実装
