@@ -1,6 +1,7 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { Doc, Id } from './_generated/dataModel'
+import { api } from './_generated/api'
 
 // ユーザー作成/取得
 export const createOrGetUser = mutation({

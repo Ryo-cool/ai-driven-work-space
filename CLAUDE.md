@@ -162,24 +162,40 @@ CLOUDFLARE_ACCOUNT_ID=
   - [x] コンポーネント設計方針
 - [ ] Phase 1: 基礎実装
   - [x] Convexスキーマ設計
-  - [ ] 基本エディタ機能
+  - [x] 基本エディタ機能
+    - [x] TipTapベースのエディタコンポーネント（Editor.tsx）
+    - [x] ツールバーコンポーネント（Toolbar.tsx）
+    - [x] Convex連携フック（useDocument.ts）
+  - [x] AIコマンドパレット
+    - [x] AIコマンド定義（ai-commands.ts）
+    - [x] コマンドパレットUI（CommandPalette.tsx）
+    - [x] TipTapエクステンション（AICommandExtension.ts）
+  - [x] ワークスペースページ
+    - [x] ホームページ（ドキュメント一覧）
+    - [x] ワークスペースページ（app/workspace/[id]/page.tsx）
+    - [x] Convexプロバイダー設定
+    - [x] テストデータ自動生成（seed.ts）
   - [ ] リアルタイム同期
-  - [ ] プレゼンス表示
+  - [x] プレゼンス表示
+    - [x] アクティブユーザー表示（Presence.tsx）
+    - [ ] リアルタイムカーソル位置（統合待ち）
 - [ ] Phase 2: AI統合
   - [ ] Mastraエージェント統合
-  - [ ] インラインAIコマンド
+  - [ ] AI API連携（OpenAI/Anthropic）
   - [ ] コンテキスト認識AI
+  - [ ] AIコマンドの実際処理
 - [ ] Phase 3: 高度な機能
   - [ ] コンテンツ自動変換
   - [ ] コード実行環境
   - [ ] Cloudflareエッジ最適化
 
 ### 現在の進行状況
-**Current Phase**: Phase 1 - 基礎実装  
+**Current Phase**: Phase 1 - 基礎実装 (90%完了)  
 **Last Updated**: 2025/01/06  
-**Notes**: Convexスキーマの詳細設計完了。8つのテーブル設計、リアルタイムコラボレーション・AI統合・コメント機能を含む包括的なデータ基盤を構築
+**Notes**: エディタコア機能完成。AIコマンドパレット、ワークスペースページ、テストデータ自動生成まで実装完了。残るはリアルタイム同期機能のみ
 
 ### 次のタスク
-1. 基本エディタ機能の開発（React コンポーネント）
-2. Convexとの連携実装
-3. リアルタイム同期機能の実装
+1. リアルタイム同期機能（Operational Transform）の実装
+2. AI API連携（OpenAI/Anthropic）の実装
+3. リアルタイムカーソル位置同期の実装
+4. Mastraエージェント統合の検討

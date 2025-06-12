@@ -22,6 +22,21 @@ export const getDocumentsByWorkspace = query({
   },
 })
 
+// ドキュメント一覧取得（ページング対応）
+export const listDocuments = query({
+  args: { 
+    workspaceId: v.id('workspaces'),
+    limit: v.optional(v.number())
+  },
+  handler: async (ctx, { workspaceId, limit = 50 }) => {
+    return await ctx.db
+      .query('documents')
+      .withIndex('by_workspace', (q) => q.eq('workspaceId', workspaceId))
+      .order('desc')
+      .take(limit)
+  },
+})
+
 // ドキュメント作成
 export const createDocument = mutation({
   args: {
@@ -226,5 +241,49 @@ export const getDocumentVersion = query({
       .first()
     
     return versionDoc
+  },
+})
+
+// ドキュメントコンテンツ更新（シンプル版）
+export const updateContent = mutation({
+  args: {
+    documentId: v.id('documents'),
+    content: v.string(),
+    userId: v.id('users'),
+  },
+  handler: async (ctx, { documentId, content, userId }) => {
+    const document = await ctx.db.get(documentId)
+    if (!document) {
+      throw new Error('Document not found')
+    }
+
+    const now = Date.now()
+    
+    await ctx.db.patch(documentId, {
+      content,
+      updatedAt: now,
+      lastEditedBy: userId,
+      metadata: {
+        ...document.metadata,
+        characterCount: content.length,
+        wordCount: content.split(/\s+/).filter(word => word.length > 0).length,
+      },
+    })
+  },
+})
+
+// ドキュメントタイトル更新
+export const updateTitle = mutation({
+  args: {
+    documentId: v.id('documents'),
+    title: v.string(),
+    userId: v.id('users'),
+  },
+  handler: async (ctx, { documentId, title, userId }) => {
+    await ctx.db.patch(documentId, {
+      title,
+      updatedAt: Date.now(),
+      lastEditedBy: userId,
+    })
   },
 })

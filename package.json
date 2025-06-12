@@ -10,12 +10,21 @@
     "convex": "npx convex dev"
   },
   "dependencies": {
+    "@floating-ui/react": "^0.27.12",
     "@mastra/core": "^0.10.5",
     "@mastra/deployer-cloudflare": "^0.10.5",
+    "@tiptap/extension-collaboration": "^2.14.0",
+    "@tiptap/extension-collaboration-cursor": "^2.14.0",
+    "@tiptap/extension-placeholder": "^2.14.0",
+    "@tiptap/react": "^2.14.0",
+    "@tiptap/starter-kit": "^2.14.0",
+    "@tiptap/suggestion": "^2.14.0",
     "convex": "^1.24.8",
+    "lucide-react": "^0.514.0",
     "next": "15.3.3",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "tippy.js": "^6.3.7"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
