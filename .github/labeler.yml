@@ -2,68 +2,80 @@
 
 # フロントエンド関連
 frontend:
-  - 'app/**/*'
-  - '**/*.tsx'
-  - '**/*.css'
-  - 'public/**/*'
+  - changed-files:
+    - any-glob-to-any-file: 
+      - 'app/**/*'
+      - '**/*.tsx'
+      - '**/*.css'
+      - 'public/**/*'
 
 # バックエンド関連
 backend:
-  - 'convex/**/*'
-  - 'mastra-agents/**/*'
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'convex/**/*'
+      - 'mastra-agents/**/*'
 
 # 設定ファイル
 config:
-  - '*.json'
-  - '*.js'
-  - '*.mjs'
-  - '*.config.*'
-  - '.env*'
-  - 'Makefile'
+  - changed-files:
+    - any-glob-to-any-file:
+      - '*.json'
+      - '*.js'
+      - '*.mjs'
+      - '*.config.*'
+      - '.env*'
+      - 'Makefile'
 
 # CI/CD関連
 ci/cd:
-  - '.github/**/*'
-  - 'Makefile'
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/**/*'
+      - 'Makefile'
 
 # ドキュメント
 documentation:
-  - '**/*.md'
-  - 'CLAUDE.md'
-  - 'README.md'
-  - '要件定義.md'
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*.md'
+      - 'CLAUDE.md'
+      - 'README.md'
+      - '要件定義.md'
 
 # TypeScript関連
 typescript:
-  - '**/*.ts'
-  - '**/*.tsx'
-  - 'tsconfig.json'
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*.ts'
+      - '**/*.tsx'
+      - 'tsconfig.json'
 
 # 依存関係
 dependencies:
-  - 'package.json'
-  - 'package-lock.json'
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'package.json'
+      - 'package-lock.json'
 
 # AI機能
 ai:
-  - 'convex/ai.ts'
-  - '**/ai-*'
-  - '**/*ai*'
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'convex/ai.ts'
+      - '**/ai-*'
+      - '**/*ai*'
 
 # UI/UX
 ui/ux:
-  - '**/components/**/*'
-  - '**/*.css'
-  - 'tailwind.config.*'
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/components/**/*'
+      - '**/*.css'
+      - 'tailwind.config.*'
 
-# バグ修正 (ファイル名にfixが含まれる場合)
+# バグ修正
 bugfix:
-  - '**/*fix*'
-
-# 機能追加 (featureブランチの場合)
-feature:
-  - any: ['feature/**/*']
-
-# ホットフィックス
-hotfix:
-  - any: ['hotfix/**/*']
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*fix*'

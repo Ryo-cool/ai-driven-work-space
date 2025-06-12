@@ -120,8 +120,8 @@ jobs:
           echo "## 📊 PR Statistics" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch**: \`${{ github.head_ref }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Base**: \`${{ github.base_ref }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Commits**: $(git rev-list --count origin/${{ github.base_ref }}..${{ github.sha }})" >> $GITHUB_STEP_SUMMARY
-          echo "- **Files changed**: $(git diff --name-only origin/${{ github.base_ref }}...${{ github.sha }} | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commits**: $(git rev-list --count HEAD~1..HEAD)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Files changed**: $(git diff --name-only HEAD~1 | wc -l)" >> $GITHUB_STEP_SUMMARY
 
       - name: 🏷️ Auto-label PR
         uses: actions/labeler@v5
