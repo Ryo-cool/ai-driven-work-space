@@ -12,7 +12,8 @@ export default function WorkspacePage() {
   const documentId = params.id as Id<'documents'>
   
   // TODO: 実際のユーザー認証システムと連携
-  const userId = 'user_temp' as Id<'users'>
+  // 暫定的にテストユーザーIDを使用
+  const userId = 'k173hg5x5xqwhp3gqcq1w67gzh6fepx1' as Id<'users'>
   
   const document = useQuery(api.documents.getDocument, { documentId })
 

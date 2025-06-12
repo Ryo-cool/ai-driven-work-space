@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
@@ -9,26 +9,49 @@ import { Plus, FileText, Users, Clock } from 'lucide-react'
 
 export default function HomePage() {
   const [isCreating, setIsCreating] = useState(false)
+  const [testIds, setTestIds] = useState<{userId: Id<'users'>, workspaceId: Id<'workspaces'>} | null>(null)
   
-  // TODO: 実際のユーザー認証システムと連携
-  const userId = 'user_temp' as Id<'users'>
-  const workspaceId = 'workspace_temp' as Id<'workspaces'>
+  const seedTestData = useMutation(api.seed.seedTestData)
+  const getTestIds = useMutation(api.seed.getTestIds)
   
   const createDocument = useMutation(api.documents.createDocument)
-  const documents = useQuery(api.documents.listDocuments, { 
-    workspaceId,
-    limit: 10 
-  })
+  const documents = useQuery(
+    api.documents.listDocuments, 
+    testIds ? { workspaceId: testIds.workspaceId, limit: 10 } : 'skip'
+  )
+
+  // 初期化時にテストデータを確認・作成
+  useEffect(() => {
+    const initializeData = async () => {
+      try {
+        const existingIds = await getTestIds()
+        if (existingIds) {
+          setTestIds(existingIds)
+        } else {
+          const result = await seedTestData()
+          setTestIds({
+            userId: result.userId,
+            workspaceId: result.workspaceId
+          })
+        }
+      } catch (error) {
+        console.error('Failed to initialize test data:', error)
+      }
+    }
+    
+    initializeData()
+  }, [seedTestData, getTestIds])
 
   const handleCreateDocument = async () => {
+    if (!testIds) return
+    
     setIsCreating(true)
     try {
       const newDoc = await createDocument({
         title: '無標題文檔',
         content: '',
-        authorId: userId,
-        workspaceId,
-        isPublic: false,
+        authorId: testIds.userId,
+        workspaceId: testIds.workspaceId,
       })
       
       // 新しいドキュメントページへリダイレクト
@@ -55,11 +78,11 @@ export default function HomePage() {
         <div className="mb-8">
           <button
             onClick={handleCreateDocument}
-            disabled={isCreating}
+            disabled={isCreating || !testIds}
             className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="mr-2" size={20} />
-            {isCreating ? '創建中...' : '新建文檔'}
+            {isCreating ? '創建中...' : !testIds ? '初期化中...' : '新建文檔'}
           </button>
         </div>
 

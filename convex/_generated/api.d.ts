@@ -17,6 +17,7 @@ import type * as ai from "../ai.js";
 import type * as collaboration from "../collaboration.js";
 import type * as comments from "../comments.js";
 import type * as documents from "../documents.js";
+import type * as seed from "../seed.js";
 import type * as users from "../users.js";
 
 /**
@@ -32,6 +33,7 @@ declare const fullApi: ApiFromModules<{
   collaboration: typeof collaboration;
   comments: typeof comments;
   documents: typeof documents;
+  seed: typeof seed;
   users: typeof users;
 }>;
 export declare const api: FilterApi<
