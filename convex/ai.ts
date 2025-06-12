@@ -1,6 +1,7 @@
 import { v } from 'convex/values'
 import { mutation, query, action } from './_generated/server'
 import { Doc, Id } from './_generated/dataModel'
+import { api, internal } from './_generated/api'
 
 // AI タスク作成
 export const createAITask = mutation({
@@ -284,15 +285,19 @@ export const getAIStats = query({
   handler: async (ctx, { documentId, userId, timeRange }) => {
     const since = timeRange ? Date.now() - timeRange : 0
     
-    let query = ctx.db.query('aiTasks')
+    let tasksQuery
     
     if (documentId) {
-      query = query.withIndex('by_document', (q) => q.eq('documentId', documentId))
+      tasksQuery = ctx.db.query('aiTasks')
+        .withIndex('by_document', (q) => q.eq('documentId', documentId))
     } else if (userId) {
-      query = query.withIndex('by_user', (q) => q.eq('userId', userId))
+      tasksQuery = ctx.db.query('aiTasks')
+        .withIndex('by_user', (q) => q.eq('userId', userId))
+    } else {
+      tasksQuery = ctx.db.query('aiTasks')
     }
     
-    const tasks = await query
+    const tasks = await tasksQuery
       .filter((q) => q.gt(q.field('createdAt'), since))
       .collect()
 
