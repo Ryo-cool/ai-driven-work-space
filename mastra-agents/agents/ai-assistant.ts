@@ -1,10 +1,10 @@
 import { Agent } from '@mastra/core'
+import { openai } from '@ai-sdk/openai'
 import { z } from 'zod'
 
 // AIアシスタントエージェントの定義
 export const aiAssistant = new Agent({
-  id: 'ai-assistant',
-  name: 'AI Writing Assistant',
+  name: 'ai-assistant',
   description: 'A sophisticated AI assistant for text processing and enhancement',
   
   // エージェントの性格と能力を定義
@@ -20,31 +20,8 @@ export const aiAssistant = new Agent({
     the original intent and tone of the content.
   `,
   
-  // デフォルトモデル設定
-  model: {
-    provider: 'OPEN_AI' as const,
-    id: 'gpt-4o',
-    toolChoice: 'auto' as const,
-  },
-  
-  // エラーハンドリングとリトライ設定
-  maxRetries: 3,
-  retryDelay: 1000,
-  
-  // カスタム設定
-  metadata: {
-    version: '1.0.0',
-    capabilities: [
-      'translate',
-      'summarize',
-      'expand',
-      'improve',
-      'code',
-      'fix',
-      'transform_mindmap',
-      'transform_slides'
-    ],
-  },
+  // AI SDK model configuration
+  model: openai('gpt-4o'),
 })
 
 // テキスト処理用のスキーマ定義

@@ -3,7 +3,7 @@ import { mutation, query, action } from './_generated/server'
 import { Doc, Id } from './_generated/dataModel'
 import { api, internal } from './_generated/api'
 import { AI_CONFIG, createAIPrompt } from './config'
-import { callAIWithFallback } from './ai-providers'
+import { callAIWithFallback } from './aiProviders'
 
 // AI タスク作成
 export const createAITask = mutation({
