@@ -294,3 +294,11 @@ export const getActiveUsers = query({
     return allUsers.filter(user => user.lastActive > since)
   },
 })
+
+// ユーザー情報取得
+export const getUserById = query({
+  args: { userId: v.id('users') },
+  handler: async (ctx, { userId }) => {
+    return await ctx.db.get(userId)
+  },
+})
