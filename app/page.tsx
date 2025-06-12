@@ -13,6 +13,7 @@ interface Document {
   content: string
   createdAt: number
   updatedAt: number
+  collaborators?: Id<'users'>[]
 }
 
 export default function HomePage() {

@@ -795,7 +795,7 @@ export const checkRateLimit = query({
 })
 
 // AI タスク作成（同時実行制限とレート制限チェック付き）
-export const createAITaskWithLimits = mutation({
+export const createAITaskWithLimits: ReturnType<typeof mutation> = mutation({
   args: {
     documentId: v.id('documents'),
     userId: v.id('users'),
@@ -814,7 +814,7 @@ export const createAITaskWithLimits = mutation({
     position: v.number(),
     parameters: v.optional(v.any()),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<Id<'aiTasks'>> => {
     // 同時実行制限チェック
     const concurrentCheck = await ctx.runQuery(api.ai.checkConcurrentAITasks, { 
       userId: args.userId 
