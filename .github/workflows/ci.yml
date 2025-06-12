@@ -49,6 +49,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: quality-check
+    
+    env:
+      # CI環境用のモックConvex設定
+      NEXT_PUBLIC_CONVEX_URL: "https://mock-ci-convex.convex.cloud"
 
     steps:
       - name: 📥 Checkout code
