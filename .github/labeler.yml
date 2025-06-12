@@ -1,0 +1,27 @@
+# GitHub PRの自動ラベル付け設定（既存ラベルのみ使用）
+
+# ドキュメント関連（既存のlabelを使用）
+documentation:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*.md'
+      - 'CLAUDE.md'
+      - 'README.md'
+      - '要件定義.md'
+
+# 機能追加（既存のlabelを使用）
+enhancement:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'app/**/*'
+      - 'convex/**/*'
+      - 'mastra-agents/**/*'
+      - '**/*.tsx'
+      - '**/*.ts'
+
+# バグ修正（既存のlabelを使用）
+bug:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*fix*'
+      - '**/*bug*'

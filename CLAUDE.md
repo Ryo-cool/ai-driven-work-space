@@ -36,24 +36,57 @@
 
 ## 開発コマンド
 
-```bash
-# プロジェクト初期化
-npx create-next-app@latest ai-workspace --typescript --tailwind --app
-cd ai-workspace
-npx convex dev --configure
-npm create mastra@latest mastra-agents
+### 🚀 Makefile を使用した効率的な開発
 
-# 開発環境起動（全て同時起動で統一体験）
-npm run dev          # Next.js
-npx convex dev       # Convex（ホットリロード対応）
-mastra dev          # Mastraプレイグラウンド
-wrangler dev        # Cloudflare Workers
+プロジェクトには開発効率を向上させるMakefileが用意されています：
+
+```bash
+# ヘルプ表示
+make help
+
+# 初期セットアップ
+make setup           # 依存関係のインストール + 環境チェック
+
+# 開発
+make dev            # Next.js開発サーバー起動
+make convex-dev     # Convex開発サーバー起動 (別ターミナル)
+
+# コード品質チェック
+make lint           # ESLintチェック
+make typecheck      # TypeScriptの型チェック
+make ci-check       # CI環境での全チェック実行
+
+# ビルド & デプロイ
+make build          # プロダクションビルド
+make clean          # ビルドファイルのクリア
+```
+
+### 📦 npm スクリプト
+
+```bash
+# 開発環境起動
+npm run dev          # Next.js (Turbopack有効)
+npm run convex       # Convex開発サーバー
+
+# コード品質
+npm run lint         # ESLintチェック
+npm run lint:fix     # ESLint自動修正
+npm run typecheck    # TypeScript型チェック
+npm run ci           # 統合チェック (typecheck + lint + build)
 
 # デプロイ
-vercel deploy                    # Next.js
-npx convex deploy               # Convex
-mastra deploy --platform cloudflare  # Cloudflare Workers
+npm run build        # プロダクションビルド
+npm run convex:deploy # Convex本番デプロイ
 ```
+
+### 🔄 CI/CD パイプライン
+
+GitHub ActionsによるPR時の自動CI：
+- TypeScript型チェック
+- ESLintコード品質チェック  
+- プロダクションビルドテスト
+- 依存関係脆弱性チェック
+- マルチNode.jsバージョン対応検証
 
 ## アーキテクチャ設計
 
@@ -184,7 +217,7 @@ CLOUDFLARE_ACCOUNT_ID=
     - [x] リアルタイムカーソル位置同期
 - [x] Phase 2: AI統合
   - [x] AI API連携（OpenAI/Anthropic）
-    - [x] Convex Actionsでの安全なAPI呼び出し（aiActions.ts）
+    - [x] Convex Actionsでの安全なAPI呼び出し（ai.ts統合）
     - [x] エラーハンドリングとリトライ機能
     - [x] ローディング状態とUIフィードバック
   - [x] AIコマンドの実際処理
@@ -192,15 +225,22 @@ CLOUDFLARE_ACCOUNT_ID=
     - [x] コンテキスト認識処理
     - [x] 日本語ローカライゼーション
   - [ ] Mastraエージェント統合（オプション）
+- [x] **開発品質向上**
+  - [x] TypeScript & ESLintエラー完全修正
+  - [x] Makefile導入（開発効率向上）
+  - [x] GitHub Actions CI/CD設定
+  - [x] PRテンプレート & Issueテンプレート
+  - [x] 自動ラベル付け設定
+  - [x] package.jsonスクリプト最適化
 - [ ] Phase 3: 高度な機能
   - [ ] コンテンツ自動変換
   - [ ] コード実行環境
   - [ ] Cloudflareエッジ最適化
 
 ### 現在の進行状況
-**Current Phase**: Phase 2 完了 - 高度な機能拡張フェーズへ  
+**Current Phase**: Phase 2 完了 + 開発品質向上完了 - Phase 3へ  
 **Last Updated**: 2025/01/06  
-**Notes**: メジャーブレークスルー！Y.jsリアルタイムコラボレーションとAI API統合を完全に実装。コア機能は全て完成し、「魔法的な」コラボレーション体験を実現
+**Notes**: **マイルストーン達成！** AI駆動リアルタイムコラボレーション機能完全実装 + プロダクション品質の開発環境構築完了。Makefileと自動CI/CDでチーム開発対応
 
 ### 次のタスク（Phase 3: 高度な機能）
 1. コンテンツ自動変換（テキスト→Mermaid図、マインドマップ、スライド）
