@@ -1,3 +1,4 @@
+/// <reference path="./types.d.ts" />
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { cache } from 'hono/cache'

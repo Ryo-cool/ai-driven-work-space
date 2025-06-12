@@ -22,9 +22,9 @@ export const aiAssistant = new Agent({
   
   // デフォルトモデル設定
   model: {
-    provider: 'OPEN_AI',
-    name: 'gpt-4o',
-    toolChoice: 'auto',
+    provider: 'OPEN_AI' as const,
+    id: 'gpt-4o',
+    toolChoice: 'auto' as const,
   },
   
   // エラーハンドリングとリトライ設定

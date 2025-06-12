@@ -14,7 +14,7 @@ export const translateTool = createTool({
     translatedText: z.string(),
     confidence: z.number(),
   }),
-  execute: async (input) => {
+  execute: async ({ input }) => {
     const { text, targetLanguage, sourceLanguage } = input
     // ここで実際の翻訳処理を実装
     // 現在はプレースホルダー
@@ -38,7 +38,7 @@ export const summarizeTool = createTool({
     summary: z.string(),
     keyPoints: z.array(z.string()),
   }),
-  execute: async (input) => {
+  execute: async ({ input }) => {
     const { text, maxLength, style = 'brief' } = input
     // 要約処理の実装
     return {
@@ -60,17 +60,17 @@ export const generateMermaidTool = createTool({
     mermaidCode: z.string(),
     diagramType: z.string(),
   }),
-  execute: async (input) => {
+  execute: async ({ input }) => {
     const { text, diagramType = 'mindmap' } = input
     // Mermaidダイアグラム生成の実装
-    const lines = text.split('\n').filter(line => line.trim())
+    const lines = text.split('\n').filter((line: string) => line.trim())
     
     if (diagramType === 'mindmap') {
       let mermaidCode = 'graph TD\n'
       const mainTopic = lines[0] || 'Main Topic'
       mermaidCode += `    A[${mainTopic}]\n`
       
-      lines.slice(1, 5).forEach((line, index) => {
+      lines.slice(1, 5).forEach((line: string, index: number) => {
         const nodeId = String.fromCharCode(66 + index) // B, C, D, E
         mermaidCode += `    A --> ${nodeId}[${line}]\n`
       })
@@ -106,9 +106,9 @@ export const generateSlidesTool = createTool({
     })),
     format: z.string(),
   }),
-  execute: async (input) => {
+  execute: async ({ input }) => {
     const { text, slidesCount = 3, format = 'markdown' } = input
-    const sections = text.split('\n\n').filter(s => s.trim())
+    const sections = text.split('\n\n').filter((s: string) => s.trim())
     const slides = []
     
     // タイトルスライド
