@@ -281,3 +281,94 @@ export const getActiveSessions = query({
       .collect()
   },
 })
+
+// Y.js 同期関連
+
+// Y.js更新データの送信
+export const sendYjsUpdate = mutation({
+  args: {
+    documentId: v.id('documents'),
+    userId: v.id('users'),
+    update: v.string(), // Base64エンコードされた更新データ
+    timestamp: v.number(),
+  },
+  handler: async (ctx, { documentId, userId, update, timestamp }) => {
+    const updateId = await ctx.db.insert('yjsUpdates', {
+      documentId,
+      userId,
+      data: update,
+      timestamp,
+      applied: false,
+    })
+
+    // 他のクライアントに即座に配信するため、Convexのリアルタイム機能を活用
+    return updateId
+  },
+})
+
+// Y.js更新データの取得（リアルタイム）
+export const getYjsUpdates = query({
+  args: { 
+    documentId: v.id('documents'),
+    since: v.optional(v.number()) // この時刻以降の更新のみ取得
+  },
+  handler: async (ctx, { documentId, since = 0 }) => {
+    const updates = await ctx.db
+      .query('yjsUpdates')
+      .withIndex('by_document_timestamp', (q) => 
+        q.eq('documentId', documentId).gt('timestamp', since)
+      )
+      .order('asc')
+      .take(100) // 最大100件の更新
+
+    return updates
+  },
+})
+
+// ドキュメントの初期Y.js状態を取得
+export const getInitialYjsState = query({
+  args: { documentId: v.id('documents') },
+  handler: async (ctx, { documentId }) => {
+    // 最新のドキュメント内容を取得
+    const document = await ctx.db.get(documentId)
+    if (!document) {
+      throw new Error('Document not found')
+    }
+
+    // 全ての更新を時系列順で取得（初期化用）
+    const allUpdates = await ctx.db
+      .query('yjsUpdates')
+      .withIndex('by_document_timestamp', (q) => q.eq('documentId', documentId))
+      .order('asc')
+      .collect()
+
+    return {
+      content: document.content,
+      updates: allUpdates,
+      lastTimestamp: allUpdates.length > 0 ? allUpdates[allUpdates.length - 1].timestamp : 0
+    }
+  },
+})
+
+// 古いY.js更新データのクリーンアップ
+export const cleanupOldYjsUpdates = mutation({
+  args: { 
+    documentId: v.id('documents'),
+    olderThan: v.number() // この時刻より古い更新を削除
+  },
+  handler: async (ctx, { documentId, olderThan }) => {
+    const oldUpdates = await ctx.db
+      .query('yjsUpdates')
+      .withIndex('by_document_timestamp', (q) => 
+        q.eq('documentId', documentId).lt('timestamp', olderThan)
+      )
+      .collect()
+
+    // 古い更新を削除
+    for (const update of oldUpdates) {
+      await ctx.db.delete(update._id)
+    }
+
+    return oldUpdates.length
+  },
+})

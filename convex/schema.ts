@@ -219,4 +219,16 @@ export default defineSchema({
     .index('by_user', ['userId'])
     .index('by_document', ['documentId'])
     .index('by_active', ['isActive']),
+
+  // Y.js同期用更新データ
+  yjsUpdates: defineTable({
+    documentId: v.id('documents'),
+    userId: v.id('users'),
+    data: v.string(), // Base64エンコードされたY.js更新データ
+    timestamp: v.number(),
+    applied: v.boolean(), // 他のクライアントに適用済みかどうか
+  })
+    .index('by_document', ['documentId'])
+    .index('by_timestamp', ['timestamp'])
+    .index('by_document_timestamp', ['documentId', 'timestamp']),
 })

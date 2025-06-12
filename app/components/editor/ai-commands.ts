@@ -12,77 +12,183 @@ export interface AICommand {
   name: string
   description: string
   icon: typeof Languages
-  action: (selectedText: string, context?: string) => Promise<string>
+  action: (selectedText: string, context?: string, processAI?: Function) => Promise<string>
+  type: 'translate' | 'summarize' | 'expand' | 'improve' | 'code' | 'fix'
 }
 
-export const AI_COMMANDS: AICommand[] = [
-  {
-    id: 'translate',
-    name: '翻譯',
-    description: '將選中文字翻譯成其他語言',
-    icon: Languages,
-    action: async (text) => {
-      // TODO: 實際 API 調用
-      return `Translated: ${text}`
+// AI処理関数を受け取るファクトリー関数
+export function createAICommands(processAI: Function): AICommand[] {
+  return [
+    {
+      id: 'translate',
+      name: '翻訳',
+      description: '選択したテキストを他の言語に翻訳',
+      icon: Languages,
+      type: 'translate',
+      action: async (text, context) => {
+        try {
+          const result = await processAI({
+            type: 'translate',
+            selectedText: text,
+            context,
+            provider: 'openai'
+          })
+          
+          if (result.success) {
+            return result.content
+          } else {
+            throw new Error(result.error || '翻訳に失敗しました')
+          }
+        } catch (error) {
+          console.error('Translation failed:', error)
+          throw new Error('翻訳に失敗しました。後でもう一度お試しください。')
+        }
+      }
+    },
+    {
+      id: 'summarize',
+      name: '要約',
+      description: '選択したコンテンツの簡潔な要約を生成',
+      icon: FileText,
+      type: 'summarize',
+      action: async (text, context) => {
+        try {
+          const result = await processAI({
+            type: 'summarize',
+            selectedText: text,
+            context,
+            provider: 'openai'
+          })
+          
+          if (result.success) {
+            return result.content
+          } else {
+            throw new Error(result.error || '要約に失敗しました')
+          }
+        } catch (error) {
+          console.error('Summarization failed:', error)
+          throw new Error('要約に失敗しました。後でもう一度お試しください。')
+        }
+      }
+    },
+    {
+      id: 'expand',
+      name: '拡張',
+      description: '選択したコンテンツにより詳細な情報を追加',
+      icon: Sparkles,
+      type: 'expand',
+      action: async (text, context) => {
+        try {
+          const result = await processAI({
+            type: 'expand',
+            selectedText: text,
+            context,
+            provider: 'openai'
+          })
+          
+          if (result.success) {
+            return result.content
+          } else {
+            throw new Error(result.error || '拡張に失敗しました')
+          }
+        } catch (error) {
+          console.error('Expansion failed:', error)
+          throw new Error('拡張に失敗しました。後でもう一度お試しください。')
+        }
+      }
+    },
+    {
+      id: 'improve',
+      name: '改善',
+      description: 'テキストの明瞭性と流暢性を改善',
+      icon: MessageSquare,
+      type: 'improve',
+      action: async (text, context) => {
+        try {
+          const result = await processAI({
+            type: 'improve',
+            selectedText: text,
+            context,
+            provider: 'openai'
+          })
+          
+          if (result.success) {
+            return result.content
+          } else {
+            throw new Error(result.error || '改善に失敗しました')
+          }
+        } catch (error) {
+          console.error('Improvement failed:', error)
+          throw new Error('改善に失敗しました。後でもう一度お試しください。')
+        }
+      }
+    },
+    {
+      id: 'code',
+      name: 'コード生成',
+      description: '説明に基づいてコードを生成',
+      icon: Code,
+      type: 'code',
+      action: async (text, context) => {
+        try {
+          const result = await processAI({
+            type: 'code',
+            selectedText: text,
+            context,
+            provider: 'openai'
+          })
+          
+          if (result.success) {
+            return result.content
+          } else {
+            throw new Error(result.error || 'コード生成に失敗しました')
+          }
+        } catch (error) {
+          console.error('Code generation failed:', error)
+          throw new Error('コード生成に失敗しました。後でもう一度お試しください。')
+        }
+      }
+    },
+    {
+      id: 'fix',
+      name: '修正',
+      description: 'スペルと文法エラーを修正',
+      icon: CheckCircle,
+      type: 'fix',
+      action: async (text, context) => {
+        try {
+          const result = await processAI({
+            type: 'fix',
+            selectedText: text,
+            context,
+            provider: 'openai'
+          })
+          
+          if (result.success) {
+            return result.content
+          } else {
+            throw new Error(result.error || '修正に失敗しました')
+          }
+        } catch (error) {
+          console.error('Fix failed:', error)
+          throw new Error('修正に失敗しました。後でもう一度お試しください。')
+        }
+      }
     }
-  },
-  {
-    id: 'summarize',
-    name: '摘要',
-    description: '生成選中內容的簡潔摘要',
-    icon: FileText,
-    action: async (text) => {
-      // TODO: 實際 API 調用
-      return `Summary: ${text.substring(0, 50)}...`
-    }
-  },
-  {
-    id: 'expand',
-    name: '擴展',
-    description: '為選中內容添加更多細節',
-    icon: Sparkles,
-    action: async (text) => {
-      // TODO: 實際 API 調用
-      return `${text}\n\n[Expanded content here...]`
-    }
-  },
-  {
-    id: 'improve',
-    name: '改進',
-    description: '改善文字的清晰度和流暢性',
-    icon: MessageSquare,
-    action: async (text) => {
-      // TODO: 實際 API 調用
-      return `Improved: ${text}`
-    }
-  },
-  {
-    id: 'code',
-    name: '程式碼',
-    description: '根據描述生成程式碼',
-    icon: Code,
-    action: async (text) => {
-      // TODO: 實際 API 調用
-      return `\`\`\`javascript\n// Generated code for: ${text}\nconsole.log('Hello World');\n\`\`\``
-    }
-  },
-  {
-    id: 'fix',
-    name: '修正',
-    description: '修正拼寫和語法錯誤',
-    icon: CheckCircle,
-    action: async (text) => {
-      // TODO: 實際 API 調用
-      return `Fixed: ${text}`
-    }
-  }
-]
+  ]
+}
 
-export function searchCommands(query: string): AICommand[] {
+export function searchCommands(commands: AICommand[], query: string): AICommand[] {
   const lowerQuery = query.toLowerCase()
-  return AI_COMMANDS.filter(command => 
+  return commands.filter(command => 
     command.name.toLowerCase().includes(lowerQuery) ||
     command.description.toLowerCase().includes(lowerQuery) ||
     command.id.toLowerCase().includes(lowerQuery)
   )
 }
+
+// 後方互換性のため、デフォルトのプレースホルダー版も保持
+export const AI_COMMANDS: AICommand[] = createAICommands(() => Promise.resolve({
+  success: true,
+  content: 'AI機能を有効にするには、API キーを設定してください。'
+}))
