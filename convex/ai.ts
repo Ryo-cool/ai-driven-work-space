@@ -2,6 +2,8 @@ import { v } from 'convex/values'
 import { mutation, query, action } from './_generated/server'
 import { Doc, Id } from './_generated/dataModel'
 import { api, internal } from './_generated/api'
+import { AI_CONFIG, createAIPrompt } from './config'
+import { callAIWithFallback } from './ai-providers'
 
 // AI タスク作成
 export const createAITask = mutation({
@@ -153,8 +155,8 @@ export const executeAICommand = action({
     })
 
     // リトライ設定
-    const MAX_RETRIES = 3
-    const RETRY_DELAY = 1000 // 1秒
+    const MAX_RETRIES = AI_CONFIG.MAX_RETRY_ATTEMPTS
+    const RETRY_DELAY = AI_CONFIG.RETRY_DELAY_MS
     let lastError: Error | null = null
 
     // プログレス更新用の関数
@@ -265,38 +267,26 @@ export const getAITaskById = query({
   },
 })
 
-// 実際のAI処理関数群（プレースホルダー）
+// 実際のAI処理関数群
 async function processTextImprovement(text: string, context?: string): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    return `[改善版] ${text}`
-  }
-
-  const prompt = context 
+  const userPrompt = context 
     ? `以下のテキストを改善してください。コンテキスト: ${context}\n\nテキスト: ${text}`
     : `以下のテキストを改善してください: ${text}`
 
-  try {
-    const response = process.env.OPENAI_API_KEY
-      ? await callOpenAIAPI(prompt, '文章改善の専門家として、読みやすく、明確で、魅力的な文章に改善してください。', 2000)
-      : await callAnthropicAPI(prompt, '文章改善の専門家として、読みやすく、明確で、魅力的な文章に改善してください。', 2000)
+  const systemPrompt = '文章改善の専門家として、読みやすく、明確で、魅力的な文章に改善してください。'
+  
+  const prompt = createAIPrompt(userPrompt, systemPrompt, { maxTokens: 2000 })
+  const response = await callAIWithFallback(prompt)
 
-    if (response.success && response.content) {
-      return response.content
-    }
-  } catch (error) {
-    console.error('Text improvement failed:', error)
+  if (response.success && response.content) {
+    return response.content
   }
 
+  console.error('Text improvement failed:', response.error)
   return `[改善版] ${text}`
 }
 
 async function processTranslation(text: string, targetLanguage: string): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    return `[${targetLanguage}翻訳] ${text}`
-  }
-
   const languageMap: Record<string, string> = {
     ja: '日本語',
     en: '英語',
@@ -308,102 +298,55 @@ async function processTranslation(text: string, targetLanguage: string): Promise
   }
 
   const targetLang = languageMap[targetLanguage] || targetLanguage
+  const userPrompt = `以下のテキストを${targetLang}に翻訳してください: ${text}`
+  const systemPrompt = 'あなたは多言語翻訳の専門家です。自然で正確な翻訳を提供してください。'
+  
+  const prompt = createAIPrompt(userPrompt, systemPrompt, { maxTokens: 2000 })
+  const response = await callAIWithFallback(prompt)
 
-  try {
-    const response = process.env.OPENAI_API_KEY
-      ? await callOpenAIAPI(
-          `以下のテキストを${targetLang}に翻訳してください: ${text}`,
-          `あなたは多言語翻訳の専門家です。自然で正確な翻訳を提供してください。`,
-          2000
-        )
-      : await callAnthropicAPI(
-          `以下のテキストを${targetLang}に翻訳してください: ${text}`,
-          `あなたは多言語翻訳の専門家です。自然で正確な翻訳を提供してください。`,
-          2000
-        )
-
-    if (response.success && response.content) {
-      return response.content
-    }
-  } catch (error) {
-    console.error('Translation failed:', error)
+  if (response.success && response.content) {
+    return response.content
   }
 
+  console.error('Translation failed:', response.error)
   return `[${targetLanguage}翻訳] ${text}`
 }
 
 async function processSummarization(text: string): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    return `[要約] ${text.substring(0, 100)}...`
+  const userPrompt = `以下のテキストを簡潔に要約してください: ${text}`
+  const systemPrompt = '要約の専門家として、重要なポイントを保持しながら簡潔にまとめてください。'
+  
+  const prompt = createAIPrompt(userPrompt, systemPrompt, { maxTokens: 1000 })
+  const response = await callAIWithFallback(prompt)
+
+  if (response.success && response.content) {
+    return response.content
   }
 
-  try {
-    const response = process.env.OPENAI_API_KEY
-      ? await callOpenAIAPI(
-          `以下のテキストを簡潔に要約してください: ${text}`,
-          '要約の専門家として、重要なポイントを保持しながら簡潔にまとめてください。',
-          1000
-        )
-      : await callAnthropicAPI(
-          `以下のテキストを簡潔に要約してください: ${text}`,
-          '要約の専門家として、重要なポイントを保持しながら簡潔にまとめてください。',
-          1000
-        )
-
-    if (response.success && response.content) {
-      return response.content
-    }
-  } catch (error) {
-    console.error('Summarization failed:', error)
-  }
-
+  console.error('Summarization failed:', response.error)
   return `[要約] ${text.substring(0, 100)}...`
 }
 
 async function processExpansion(text: string, context?: string): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    return `[拡張版] ${text} - より詳細な説明が追加されました。`
-  }
-
-  const prompt = context
+  const userPrompt = context
     ? `以下のテキストを拡張してください。コンテキスト: ${context}\n\nテキスト: ${text}`
     : `以下のテキストをより詳細に拡張してください: ${text}`
 
-  try {
-    const response = process.env.OPENAI_API_KEY
-      ? await callOpenAIAPI(
-          prompt,
-          '文章拡張の専門家として、より詳細な情報、例、説明を追加して内容を豊かにしてください。',
-          3000
-        )
-      : await callAnthropicAPI(
-          prompt,
-          '文章拡張の専門家として、より詳細な情報、例、説明を追加して内容を豊かにしてください。',
-          3000
-        )
+  const systemPrompt = '文章拡張の専門家として、より詳細な情報、例、説明を追加して内容を豊かにしてください。'
+  
+  const prompt = createAIPrompt(userPrompt, systemPrompt, { maxTokens: 3000 })
+  const response = await callAIWithFallback(prompt)
 
-    if (response.success && response.content) {
-      return response.content
-    }
-  } catch (error) {
-    console.error('Text expansion failed:', error)
+  if (response.success && response.content) {
+    return response.content
   }
 
+  console.error('Text expansion failed:', response.error)
   return `[拡張版] ${text} - より詳細な説明が追加されました。`
 }
 
 async function processToMindMap(text: string): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey) {
-    // フォールバック処理
-    return generateBasicMindMap(text)
-  }
-
-  try {
-    const response = await callOpenAIAPI(
-      `Convert the following text into a Mermaid mindmap diagram. 
+  const userPrompt = `Convert the following text into a Mermaid mindmap diagram. 
       Extract the main topic and key points, then format them as a Mermaid graph.
       The format should be:
       graph TD
@@ -412,18 +355,18 @@ async function processToMindMap(text: string): Promise<string> {
           etc.
       
       Text to convert:
-      ${text}`,
-      'You are an expert at creating clear, well-structured Mermaid diagrams from text content.',
-      1000
-    )
+      ${text}`
 
-    if (response.success && response.content) {
-      return response.content
-    }
-  } catch (error) {
-    console.error('AI mindmap generation failed:', error)
+  const systemPrompt = 'You are an expert at creating clear, well-structured Mermaid diagrams from text content.'
+  
+  const prompt = createAIPrompt(userPrompt, systemPrompt, { maxTokens: 1000 })
+  const response = await callAIWithFallback(prompt, 'openai') // OpenAIを優先
+
+  if (response.success && response.content) {
+    return response.content
   }
 
+  console.error('AI mindmap generation failed:', response.error)
   // フォールバック: 基本的なマインドマップを生成
   return generateBasicMindMap(text)
 }
@@ -735,92 +678,6 @@ export const callOpenAI = action({
   },
 })
 
-// ヘルパー関数
-async function callOpenAIAPI(prompt: string, systemPrompt?: string, maxTokens: number = 1000) {
-  const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey) {
-    throw new Error('OpenAI API key not configured')
-  }
-
-  try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4',
-        messages: [
-          ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
-          { role: 'user', content: prompt }
-        ],
-        max_tokens: maxTokens,
-        temperature: 0.7,
-      }),
-    })
-
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`)
-    }
-
-    const data = await response.json()
-    return {
-      success: true,
-      content: data.choices[0]?.message?.content || '',
-      usage: data.usage,
-    }
-  } catch (error) {
-    console.error('OpenAI API call failed:', error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    }
-  }
-}
-
-async function callAnthropicAPI(prompt: string, systemPrompt?: string, maxTokens: number = 1000) {
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    throw new Error('Anthropic API key not configured')
-  }
-
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'Content-Type': 'application/json',
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-3-sonnet-20240229',
-        max_tokens: maxTokens,
-        system: systemPrompt || '',
-        messages: [
-          { role: 'user', content: prompt }
-        ],
-      }),
-    })
-
-    if (!response.ok) {
-      throw new Error(`Anthropic API error: ${response.status}`)
-    }
-
-    const data = await response.json()
-    return {
-      success: true,
-      content: data.content[0]?.text || '',
-      usage: data.usage,
-    }
-  } catch (error) {
-    console.error('Anthropic API call failed:', error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    }
-  }
-}
 
 // AI処理のメイン関数
 export const processAICommand = action({
@@ -866,12 +723,11 @@ export const processAICommand = action({
       }
     }
 
-    const prompt = prompts[type]
+    const promptData = prompts[type]
+    const prompt = createAIPrompt(promptData.user, promptData.system, { maxTokens: 2000 })
     
-    // AI API呼び出し
-    const result = provider === 'anthropic' 
-      ? await callAnthropicAPI(prompt.user, prompt.system, 2000)
-      : await callOpenAIAPI(prompt.user, prompt.system, 2000)
+    // AI API呼び出し（フォールバック機能付き）
+    const result = await callAIWithFallback(prompt, provider)
 
     return result
   },
@@ -921,7 +777,7 @@ export const checkConcurrentAITasks = query({
       )
       .collect()
 
-    const MAX_CONCURRENT_TASKS = 3
+    const MAX_CONCURRENT_TASKS = AI_CONFIG.MAX_CONCURRENT_TASKS_PER_USER
     const canExecute = processingTasks.length < MAX_CONCURRENT_TASKS
 
     return {
@@ -953,7 +809,7 @@ export const checkRateLimit = query({
       .filter((q) => q.gt(q.field('createdAt'), since))
       .collect()
 
-    const RATE_LIMIT = 100 // 1時間あたりの最大リクエスト数
+    const RATE_LIMIT = AI_CONFIG.RATE_LIMIT_HOURLY
     const requestCount = recentTasks.length
     const isWithinLimit = requestCount < RATE_LIMIT
 
