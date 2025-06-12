@@ -242,7 +242,7 @@ export const endSession = mutation({
 })
 
 // セッション統計更新
-export const updateSessionStats = mutation({
+export const updateSessionStats = internalMutation({
   args: {
     userId: v.id('users'),
     documentId: v.id('documents'),
