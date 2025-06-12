@@ -1,0 +1,41 @@
+name = "ai-processor"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# AI Workers設定
+[ai]
+binding = "AI"
+
+# KVストレージバインディング（キャッシュ用）
+[[kv_namespaces]]
+binding = "AI_CACHE"
+id = "ai_cache_namespace_id"
+preview_id = "ai_cache_preview_namespace_id"
+
+# 環境変数
+[vars]
+ENVIRONMENT = "production"
+MAX_REQUESTS_PER_MINUTE = "60"
+
+# 開発環境設定
+[env.development]
+name = "ai-processor-dev"
+vars = { ENVIRONMENT = "development" }
+
+# ステージング環境設定
+[env.staging]
+name = "ai-processor-staging"
+vars = { ENVIRONMENT = "staging" }
+
+# ルート設定
+[[routes]]
+pattern = "*/api/ai/*"
+zone_name = "example.com"
+
+# CPU制限
+[limits]
+cpu_ms = 50
+
+# ログ設定
+[observability]
+enabled = true
