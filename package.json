@@ -7,7 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "convex": "npx convex dev"
+    "lint:fix": "next lint --fix",
+    "typecheck": "tsc --noEmit",
+    "convex": "npx convex dev",
+    "convex:deploy": "npx convex deploy",
+    "clean": "rm -rf .next node_modules/.cache",
+    "setup": "npm install",
+    "ci": "npm run typecheck && npm run lint && npm run build",
+    "audit:fix": "npm audit fix"
   },
   "dependencies": {
     "@floating-ui/react": "^0.27.12",
