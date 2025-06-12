@@ -1,11 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
+import './editor.css'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Collaboration from '@tiptap/extension-collaboration'
 import CollaborationCursor from '@tiptap/extension-collaboration-cursor'
+import Underline from '@tiptap/extension-underline'
 import { useQuery, useMutation, useAction } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
@@ -36,6 +38,7 @@ export default function Editor({ documentId, userId }: EditorProps) {
   const [isConnected, setIsConnected] = useState(false)
   const [collaborationReady, setCollaborationReady] = useState(false)
   const [isAIProcessing, setIsAIProcessing] = useState(false)
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   
   const document = useQuery(api.documents.getDocument, { id: documentId })
   const updateContent = useMutation(api.documents.updateContent)
@@ -110,25 +113,45 @@ export default function Editor({ documentId, userId }: EditorProps) {
         showOnlyWhenEditable: true,
         showOnlyCurrent: true,
       }),
-      // Y.js Collaboration
-      Collaboration.configure({
-        document: ydoc,
-      }),
-      // カーソル同期
-      CollaborationCursor.configure({
-        provider: provider,
-        user: {
-          name: user?.name || 'Unknown User',
-          color: getUserColor(userId),
-        },
-      }),
+      Underline,
+      // Y.js Collaboration - ydocが存在する場合のみ追加
+      ...(ydoc ? [
+        Collaboration.configure({
+          document: ydoc,
+          // フィールド名を明示的に指定してデフォルトの競合を避ける
+          field: 'default',
+        }),
+        // カーソル同期 - providerとawarenessが存在する場合のみ
+        ...(provider?.awareness ? [
+          CollaborationCursor.configure({
+            provider: provider,
+            user: {
+              name: user?.name || 'Unknown User',
+              color: getUserColor(userId),
+            },
+          }),
+        ] : []),
+      ] : []),
       AICommandExtension.configure({
         suggestion: createAICommandSuggestion(aiCommands, handleAICommand),
       }),
     ],
-    onUpdate: () => {
-      // Y.jsが同期を担当するため、Convexへの直接的な保存は定期的に行う
-      // リアルタイム同期はY.jsが処理
+    onUpdate: ({ editor }) => {
+      // 入力停止後2秒で保存（デバウンス）
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
+      }
+      
+      saveTimeoutRef.current = setTimeout(() => {
+        const content = editor.getHTML()
+        if (content && content !== document?.content && content !== '<p></p>') {
+          updateContent({
+            documentId,
+            content,
+            userId,
+          }).catch(console.error)
+        }
+      }, 2000)
     },
     onCreate: () => {
       setCollaborationReady(true)
@@ -141,30 +164,57 @@ export default function Editor({ documentId, userId }: EditorProps) {
 
     const saveInterval = setInterval(() => {
       const content = editor.getHTML()
-      if (content && content !== document?.content) {
+      // 内容が実際に変更されており、空でない場合のみ保存
+      if (content && content !== document?.content && content !== '<p></p>') {
         updateContent({
           documentId,
           content,
           userId,
         }).catch(console.error)
       }
-    }, 10000) // 10秒ごとに保存
+    }, 10000) // 10秒ごとに保存（よりリアルタイムに）
 
     return () => clearInterval(saveInterval)
   }, [editor, collaborationReady, document?.content, documentId, userId, updateContent])
 
-  // 初期コンテンツの設定（Y.jsドキュメントが空の場合のみ）
+  // ページ離脱時の保存
   useEffect(() => {
-    if (editor && document?.content && collaborationReady) {
-      const yjsText = ydoc?.getText('default')
-      if (yjsText && yjsText.length === 0 && document.content) {
-        // Y.jsドキュメントが空の場合、Convexからの内容で初期化
+    if (!editor || !collaborationReady) return
+
+    const handleBeforeUnload = () => {
+      const content = editor.getHTML()
+      if (content && content !== document?.content && content !== '<p></p>') {
+        updateContent({
+          documentId,
+          content,
+          userId,
+        }).catch(console.error)
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [editor, collaborationReady, document?.content, documentId, userId, updateContent])
+
+  // 初期コンテンツの復元（Y.jsが空で、Convexに保存された内容がある場合）
+  useEffect(() => {
+    if (editor && document?.content && collaborationReady && ydoc) {
+      // エディタの現在の内容をチェック
+      const currentContent = editor.getHTML()
+      const isEmpty = currentContent === '<p></p>' || currentContent === '' || 
+                     currentContent.replace(/<[^>]*>/g, '').trim() === ''
+      
+      // エディタが空で、Convexに保存された内容がある場合に復元
+      if (isEmpty && document.content && document.content !== '<p></p>') {
         editor.commands.setContent(document.content)
       }
     }
   }, [editor, document?.content, collaborationReady, ydoc])
 
-  if (!document) {
+  if (!document || !ydoc || !editor) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="animate-pulse text-gray-500">読み込み中...</div>
@@ -191,10 +241,12 @@ export default function Editor({ documentId, userId }: EditorProps) {
           </div>
         </div>
       </div>
-      <EditorContent 
-        editor={editor} 
-        className="w-full flex-1 overflow-y-auto"
-      />
+      <div className="w-full flex-1 overflow-y-auto">
+        <EditorContent 
+          editor={editor} 
+          className="editor-content"
+        />
+      </div>
     </div>
   )
 }
