@@ -1,40 +1,6 @@
-# GitHub PRの自動ラベル付け設定
+# GitHub PRの自動ラベル付け設定（既存ラベルのみ使用）
 
-# フロントエンド関連
-frontend:
-  - changed-files:
-    - any-glob-to-any-file: 
-      - 'app/**/*'
-      - '**/*.tsx'
-      - '**/*.css'
-      - 'public/**/*'
-
-# バックエンド関連
-backend:
-  - changed-files:
-    - any-glob-to-any-file:
-      - 'convex/**/*'
-      - 'mastra-agents/**/*'
-
-# 設定ファイル
-config:
-  - changed-files:
-    - any-glob-to-any-file:
-      - '*.json'
-      - '*.js'
-      - '*.mjs'
-      - '*.config.*'
-      - '.env*'
-      - 'Makefile'
-
-# CI/CD関連
-ci/cd:
-  - changed-files:
-    - any-glob-to-any-file:
-      - '.github/**/*'
-      - 'Makefile'
-
-# ドキュメント
+# ドキュメント関連（既存のlabelを使用）
 documentation:
   - changed-files:
     - any-glob-to-any-file:
@@ -43,39 +9,19 @@ documentation:
       - 'README.md'
       - '要件定義.md'
 
-# TypeScript関連
-typescript:
+# 機能追加（既存のlabelを使用）
+enhancement:
   - changed-files:
     - any-glob-to-any-file:
-      - '**/*.ts'
+      - 'app/**/*'
+      - 'convex/**/*'
+      - 'mastra-agents/**/*'
       - '**/*.tsx'
-      - 'tsconfig.json'
+      - '**/*.ts'
 
-# 依存関係
-dependencies:
-  - changed-files:
-    - any-glob-to-any-file:
-      - 'package.json'
-      - 'package-lock.json'
-
-# AI機能
-ai:
-  - changed-files:
-    - any-glob-to-any-file:
-      - 'convex/ai.ts'
-      - '**/ai-*'
-      - '**/*ai*'
-
-# UI/UX
-ui/ux:
-  - changed-files:
-    - any-glob-to-any-file:
-      - '**/components/**/*'
-      - '**/*.css'
-      - 'tailwind.config.*'
-
-# バグ修正
-bugfix:
+# バグ修正（既存のlabelを使用）
+bug:
   - changed-files:
     - any-glob-to-any-file:
       - '**/*fix*'
+      - '**/*bug*'

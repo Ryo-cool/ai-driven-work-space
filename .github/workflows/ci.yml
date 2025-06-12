@@ -133,6 +133,7 @@ jobs:
         uses: actions/labeler@v5
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
+        continue-on-error: true  # ラベル作成権限がない場合もCIを続行
 
   # すべてのチェックが完了した時の最終確認
   ci-success:
