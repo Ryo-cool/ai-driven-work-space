@@ -60,12 +60,16 @@ export const AICommandExtension = Extension.create({
   },
 })
 
-export function createAICommandSuggestion(onExecute?: (command: AICommand) => void) {
+export function createAICommandSuggestion(commands: AICommand[], onExecute?: (command: AICommand) => void) {
   return {
     items: ({ query }: { query: string }) => {
-      return import('../ai-commands').then(({ searchCommands }) => {
-        return searchCommands(query)
-      })
+      return Promise.resolve(
+        commands.filter(command => 
+          command.name.toLowerCase().includes(query.toLowerCase()) ||
+          command.description.toLowerCase().includes(query.toLowerCase()) ||
+          command.id.toLowerCase().includes(query.toLowerCase())
+        )
+      )
     },
 
     render: () => {

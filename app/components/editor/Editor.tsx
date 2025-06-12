@@ -7,11 +7,11 @@ import Placeholder from '@tiptap/extension-placeholder'
 import Collaboration from '@tiptap/extension-collaboration'
 import CollaborationCursor from '@tiptap/extension-collaboration-cursor'
 import * as Y from 'yjs'
-import { useQuery, useMutation } from 'convex/react'
+import { useQuery, useMutation, useAction } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
 import { AICommandExtension, createAICommandSuggestion } from './extensions/AICommandExtension'
-import { AICommand } from './ai-commands'
+import { createAICommands, AICommand } from './ai-commands'
 import Toolbar from './Toolbar'
 import { useConvexYjsProvider } from './providers/ConvexYjsProvider'
 
@@ -36,10 +36,12 @@ const getUserColor = (userId: string) => {
 export default function Editor({ documentId, userId }: EditorProps) {
   const [isConnected, setIsConnected] = useState(false)
   const [collaborationReady, setCollaborationReady] = useState(false)
+  const [isAIProcessing, setIsAIProcessing] = useState(false)
   
   const document = useQuery(api.documents.getDocument, { documentId })
   const updateContent = useMutation(api.documents.updateContent)
   const user = useQuery(api.users.getUserById, { userId })
+  const processAICommand = useAction(api.aiActions.processAICommand)
   
   // Y.js統合
   const { ydoc, provider, connected } = useConvexYjsProvider(documentId, userId)
@@ -48,13 +50,35 @@ export default function Editor({ documentId, userId }: EditorProps) {
     setIsConnected(connected)
   }, [connected])
 
+  // AI処理関数
+  const processAI = async (params: any) => {
+    setIsAIProcessing(true)
+    try {
+      const result = await processAICommand(params)
+      return result
+    } finally {
+      setIsAIProcessing(false)
+    }
+  }
+
+  // AI コマンドを実際のAPI呼び出し付きで作成
+  const aiCommands = createAICommands(processAI)
+
   const handleAICommand = async (command: AICommand) => {
     const { from, to } = editor?.state.selection || { from: 0, to: 0 }
     const selectedText = editor?.state.doc.textBetween(from, to, ' ') || ''
     
+    if (!selectedText.trim()) {
+      // 選択テキストがない場合の処理
+      editor?.chain().focus().insertContent('AIコマンドを使用するには、テキストを選択してください。').run()
+      return
+    }
+    
     try {
+      // AIコマンドの実行（ローディング状態付き）
       const result = await command.action(selectedText, document?.content)
       
+      // 結果をエディタに挿入
       if (selectedText) {
         editor?.chain().focus().insertContentAt({ from, to }, result).run()
       } else {
@@ -62,6 +86,9 @@ export default function Editor({ documentId, userId }: EditorProps) {
       }
     } catch (error) {
       console.error('AI command failed:', error)
+      // エラーメッセージをエディタに表示
+      const errorMessage = `❌ AIコマンドでエラーが発生しました: ${error instanceof Error ? error.message : '不明なエラー'}`
+      editor?.chain().focus().insertContent(errorMessage).run()
     }
   }
 
@@ -92,7 +119,7 @@ export default function Editor({ documentId, userId }: EditorProps) {
         },
       }),
       AICommandExtension.configure({
-        suggestion: createAICommandSuggestion(handleAICommand),
+        suggestion: createAICommandSuggestion(aiCommands, handleAICommand),
       }),
     ],
     onUpdate: ({ editor }) => {
@@ -145,11 +172,19 @@ export default function Editor({ documentId, userId }: EditorProps) {
     <div className="w-full h-full bg-white rounded-lg shadow-sm flex flex-col">
       <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200">
         <Toolbar editor={editor} />
-        <div className="flex items-center space-x-2">
-          <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-          <span className="text-sm text-gray-500">
-            {isConnected ? 'オンライン' : 'オフライン'}
-          </span>
+        <div className="flex items-center space-x-4">
+          {isAIProcessing && (
+            <div className="flex items-center space-x-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              <span className="text-sm text-blue-600">AI処理中...</span>
+            </div>
+          )}
+          <div className="flex items-center space-x-2">
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+            <span className="text-sm text-gray-500">
+              {isConnected ? 'オンライン' : 'オフライン'}
+            </span>
+          </div>
         </div>
       </div>
       <EditorContent 
