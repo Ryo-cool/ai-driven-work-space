@@ -464,60 +464,32 @@ function generateBasicSlides(text: string): string {
 }
 
 async function processCodeExplanation(code: string): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    return `[コード解説] このコードは${code.substring(0, 50)}...の処理を行います。`
+  const userPrompt = `以下のコードを解説してください。初心者にもわかりやすく説明してください:\n\n${code}`
+  const systemPrompt = 'プログラミング教育の専門家として、コードの動作を明確に説明してください。'
+  
+  const prompt = createAIPrompt(userPrompt, systemPrompt, { maxTokens: 2000 })
+  const response = await callAIWithFallback(prompt)
+
+  if (response.success && response.content) {
+    return response.content
   }
 
-  try {
-    const response = process.env.OPENAI_API_KEY
-      ? await callOpenAIAPI(
-          `以下のコードを解説してください。初心者にもわかりやすく説明してください:\n\n${code}`,
-          'プログラミング教育の専門家として、コードの動作を明確に説明してください。',
-          2000
-        )
-      : await callAnthropicAPI(
-          `以下のコードを解説してください。初心者にもわかりやすく説明してください:\n\n${code}`,
-          'プログラミング教育の専門家として、コードの動作を明確に説明してください。',
-          2000
-        )
-
-    if (response.success && response.content) {
-      return response.content
-    }
-  } catch (error) {
-    console.error('Code explanation failed:', error)
-  }
-
+  console.error('Code explanation failed:', response.error)
   return `[コード解説] このコードは${code.substring(0, 50)}...の処理を行います。`
 }
 
 async function processCodeFix(code: string): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    return `[修正版] ${code}`
+  const userPrompt = `以下のコードのバグや問題を修正してください。修正箇所にはコメントを追加してください:\n\n${code}`
+  const systemPrompt = 'ソフトウェアエンジニアとして、コードのバグを特定し、修正してください。'
+  
+  const prompt = createAIPrompt(userPrompt, systemPrompt, { maxTokens: 2000 })
+  const response = await callAIWithFallback(prompt)
+
+  if (response.success && response.content) {
+    return response.content
   }
 
-  try {
-    const response = process.env.OPENAI_API_KEY
-      ? await callOpenAIAPI(
-          `以下のコードのバグや問題を修正してください。修正箇所にはコメントを追加してください:\n\n${code}`,
-          'ソフトウェアエンジニアとして、コードのバグを特定し、修正してください。',
-          2000
-        )
-      : await callAnthropicAPI(
-          `以下のコードのバグや問題を修正してください。修正箇所にはコメントを追加してください:\n\n${code}`,
-          'ソフトウェアエンジニアとして、コードのバグを特定し、修正してください。',
-          2000
-        )
-
-    if (response.success && response.content) {
-      return response.content
-    }
-  } catch (error) {
-    console.error('Code fix failed:', error)
-  }
-
+  console.error('Code fix failed:', response.error)
   return `[修正版] ${code}`
 }
 
