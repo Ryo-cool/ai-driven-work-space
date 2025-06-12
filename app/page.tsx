@@ -25,14 +25,19 @@ export default function HomePage() {
     const initializeData = async () => {
       try {
         const existingIds = await getTestIds()
-        if (existingIds) {
-          setTestIds(existingIds)
+        if (existingIds && existingIds.workspaceId) {
+          setTestIds({
+            userId: existingIds.userId,
+            workspaceId: existingIds.workspaceId
+          })
         } else {
           const result = await seedTestData()
-          setTestIds({
-            userId: result.userId,
-            workspaceId: result.workspaceId
-          })
+          if (result.workspaceId) {
+            setTestIds({
+              userId: result.userId,
+              workspaceId: result.workspaceId
+            })
+          }
         }
       } catch (error) {
         console.error('Failed to initialize test data:', error)

@@ -15,7 +15,7 @@ export default function WorkspacePage() {
   // 暫定的にテストユーザーIDを使用
   const userId = 'k173hg5x5xqwhp3gqcq1w67gzh6fepx1' as Id<'users'>
   
-  const document = useQuery(api.documents.getDocument, { documentId })
+  const document = useQuery(api.documents.getDocument, { id: documentId })
 
   if (!document) {
     return (

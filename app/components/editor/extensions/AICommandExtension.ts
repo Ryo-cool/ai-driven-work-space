@@ -13,38 +13,9 @@ export const AICommandExtension = Extension.create({
       suggestion: {
         char: '/',
         startOfLine: false,
-        command: ({ editor, range, props }: any) => {
-          const command = props as AICommand
-          
-          // 獲取選中的文本
-          const { from, to } = editor.state.selection
-          const selectedText = editor.state.doc.textBetween(from, to, ' ')
-          
-          // 刪除觸發字符
-          editor.chain()
-            .focus()
-            .deleteRange(range)
-            .run()
-
-          // 執行 AI 命令
-          command.action(selectedText).then((result) => {
-            if (selectedText) {
-              // 如果有選中文本，替換它
-              editor.chain()
-                .focus()
-                .insertContentAt(
-                  { from, to },
-                  result
-                )
-                .run()
-            } else {
-              // 否則在當前位置插入
-              editor.chain()
-                .focus()
-                .insertContent(result)
-                .run()
-            }
-          }).catch(console.error)
+        command: () => {
+          // この部分はTipTapが自動的に処理する
+          // 実際のコマンド実行は onSelect ハンドラで処理される
         },
       },
     }
@@ -77,19 +48,19 @@ export function createAICommandSuggestion(commands: AICommand[], onExecute?: (co
       let popup: TippyInstance | null = null
 
       return {
-        onStart: (props: any) => {
+        onStart: (props: { query: string; editor: unknown; clientRect: () => DOMRect }) => {
           component = new ReactRenderer(CommandPalette, {
             props: {
+              commands,
               query: props.query,
               onSelect: (command: AICommand) => {
                 if (onExecute) {
                   onExecute(command)
-                } else {
-                  props.command(command)
                 }
               },
             },
-            editor: props.editor,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            editor: props.editor as any,
           })
 
           popup = tippy(document.body, {
@@ -103,15 +74,14 @@ export function createAICommandSuggestion(commands: AICommand[], onExecute?: (co
           })
         },
 
-        onUpdate: (props: any) => {
+        onUpdate: (props: { query: string; clientRect: () => DOMRect }) => {
           if (component) {
             component.updateProps({
+              commands,
               query: props.query,
               onSelect: (command: AICommand) => {
                 if (onExecute) {
                   onExecute(command)
-                } else {
-                  props.command(command)
                 }
               },
             })
@@ -124,13 +94,13 @@ export function createAICommandSuggestion(commands: AICommand[], onExecute?: (co
           }
         },
 
-        onKeyDown: (props: any) => {
+        onKeyDown: (props: { event: KeyboardEvent }) => {
           if (props.event.key === 'Escape') {
             popup?.hide()
             return true
           }
 
-          return component?.ref?.onKeyDown(props.event) || false
+          return false
         },
 
         onExit: () => {

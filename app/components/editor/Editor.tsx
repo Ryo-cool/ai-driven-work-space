@@ -6,7 +6,6 @@ import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Collaboration from '@tiptap/extension-collaboration'
 import CollaborationCursor from '@tiptap/extension-collaboration-cursor'
-import * as Y from 'yjs'
 import { useQuery, useMutation, useAction } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
@@ -38,10 +37,10 @@ export default function Editor({ documentId, userId }: EditorProps) {
   const [collaborationReady, setCollaborationReady] = useState(false)
   const [isAIProcessing, setIsAIProcessing] = useState(false)
   
-  const document = useQuery(api.documents.getDocument, { documentId })
+  const document = useQuery(api.documents.getDocument, { id: documentId })
   const updateContent = useMutation(api.documents.updateContent)
   const user = useQuery(api.users.getUserById, { userId })
-  const processAICommand = useAction(api.aiActions.processAICommand)
+  const processAICommand = useAction(api.ai.processAICommand)
   
   // Y.js統合
   const { ydoc, provider, connected } = useConvexYjsProvider(documentId, userId)
@@ -51,7 +50,12 @@ export default function Editor({ documentId, userId }: EditorProps) {
   }, [connected])
 
   // AI処理関数
-  const processAI = async (params: any) => {
+  const processAI = async (params: {
+    type: 'translate' | 'summarize' | 'expand' | 'improve' | 'code' | 'fix'
+    selectedText: string
+    context?: string
+    provider?: 'openai' | 'anthropic'
+  }) => {
     setIsAIProcessing(true)
     try {
       const result = await processAICommand(params)
@@ -122,7 +126,7 @@ export default function Editor({ documentId, userId }: EditorProps) {
         suggestion: createAICommandSuggestion(aiCommands, handleAICommand),
       }),
     ],
-    onUpdate: ({ editor }) => {
+    onUpdate: () => {
       // Y.jsが同期を担当するため、Convexへの直接的な保存は定期的に行う
       // リアルタイム同期はY.jsが処理
     },

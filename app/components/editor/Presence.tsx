@@ -32,13 +32,13 @@ export default function Presence({ documentId, currentUserId }: PresenceProps) {
   useEffect(() => {
     if (presenceData) {
       const users = presenceData
-        .filter(p => p.userId !== currentUserId && p.isActive)
+        .filter(p => p.userId !== currentUserId && p.isOnline && p.activity !== 'idle')
         .map((presence, index) => ({
           userId: presence.userId,
           userName: presence.userId, // TODO: Get actual user name
-          cursorPosition: presence.cursorPosition,
-          selectionStart: presence.selectionStart,
-          selectionEnd: presence.selectionEnd,
+          cursorPosition: presence.cursor.position,
+          selectionStart: presence.cursor.selection?.start,
+          selectionEnd: presence.cursor.selection?.end,
           color: PRESENCE_COLORS[index % PRESENCE_COLORS.length]
         }))
       setActiveUsers(users)

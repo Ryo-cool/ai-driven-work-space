@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import { useFloating, offset, flip, shift, autoUpdate } from '@floating-ui/react'
-import { AI_COMMANDS, AICommand, searchCommands } from './ai-commands'
-import { Loader2 } from 'lucide-react'
+import { AICommand } from './ai-commands'
 
 interface CommandPaletteProps {
+  commands: AICommand[]
   onSelect: (command: AICommand) => void
   query?: string
 }
@@ -15,10 +15,13 @@ export interface CommandPaletteRef {
 }
 
 const CommandPalette = forwardRef<CommandPaletteRef, CommandPaletteProps>(
-  ({ onSelect, query = '' }, ref) => {
+  ({ commands, onSelect, query = '' }, ref) => {
     const [selectedIndex, setSelectedIndex] = useState(0)
-    const [isLoading, setIsLoading] = useState(false)
-    const filteredCommands = searchCommands(query)
+    const filteredCommands = commands.filter(command => 
+      command.name.toLowerCase().includes(query.toLowerCase()) ||
+      command.description.toLowerCase().includes(query.toLowerCase()) ||
+      command.id.toLowerCase().includes(query.toLowerCase())
+    )
 
     useImperativeHandle(ref, () => ({
       onKeyDown: (event: KeyboardEvent) => {
@@ -58,7 +61,7 @@ const CommandPalette = forwardRef<CommandPaletteRef, CommandPaletteProps>(
       return (
         <div className="w-80 p-2 bg-white rounded-lg shadow-xl border border-gray-200">
           <div className="text-center py-8 text-gray-500">
-            沒有找到匹配的指令
+            マッチするコマンドが見つかりません
           </div>
         </div>
       )
@@ -114,12 +117,14 @@ export function CommandPalettePortal({
   referenceEl,
   show,
   query,
+  commands,
   onSelect,
   onClose
 }: {
   referenceEl: HTMLElement | null
   show: boolean
   query: string
+  commands: AICommand[]
   onSelect: (command: AICommand) => void
   onClose: () => void
 }) {
@@ -167,6 +172,7 @@ export function CommandPalettePortal({
     >
       <CommandPalette
         ref={commandRef}
+        commands={commands}
         query={query}
         onSelect={onSelect}
       />

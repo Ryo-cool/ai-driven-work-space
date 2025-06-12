@@ -2,7 +2,7 @@ import * as Y from 'yjs'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef } from 'react'
 
 export interface ConvexYjsProviderOptions {
   documentId: Id<'documents'>
@@ -16,8 +16,8 @@ export class ConvexYjsProvider {
   private ydoc: Y.Doc
   private connected: boolean = false
   private synced: boolean = false
-  private updateMutation: any
-  private awareness: any
+  private updateMutation: ((params: { documentId: Id<'documents'>; userId: Id<'users'>; update: string; timestamp: number }) => Promise<unknown>) | null = null
+  private awareness: unknown = null
 
   constructor(options: ConvexYjsProviderOptions) {
     this.documentId = options.documentId
@@ -30,7 +30,7 @@ export class ConvexYjsProvider {
     this.connected = true
   }
 
-  private handleYDocUpdate = (update: Uint8Array, origin: any) => {
+  private handleYDocUpdate = (update: Uint8Array, origin: unknown) => {
     // 自分の変更の場合はConvexに送信しない（無限ループ防止）
     if (origin === this) return
     
@@ -56,7 +56,7 @@ export class ConvexYjsProvider {
     }
   }
 
-  applyUpdateFromConvex = (updateString: string, origin?: any) => {
+  applyUpdateFromConvex = (updateString: string, origin?: unknown) => {
     try {
       // Base64文字列をUint8Arrayに変換
       const update = new Uint8Array(
@@ -70,7 +70,7 @@ export class ConvexYjsProvider {
     }
   }
 
-  setUpdateMutation = (mutation: any) => {
+  setUpdateMutation = (mutation: (params: { documentId: Id<'documents'>; userId: Id<'users'>; update: string; timestamp: number }) => Promise<unknown>) => {
     this.updateMutation = mutation
   }
 
@@ -85,6 +85,10 @@ export class ConvexYjsProvider {
 
   destroy = () => {
     this.disconnect()
+  }
+
+  get isConnected() {
+    return this.connected
   }
 }
 
@@ -133,6 +137,6 @@ export function useConvexYjsProvider(
   return {
     ydoc: ydocRef.current,
     provider: providerRef.current,
-    connected: providerRef.current?.connected || false
+    connected: providerRef.current?.isConnected || false
   }
 }

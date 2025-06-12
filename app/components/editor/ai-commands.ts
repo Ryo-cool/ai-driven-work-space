@@ -12,12 +12,19 @@ export interface AICommand {
   name: string
   description: string
   icon: typeof Languages
-  action: (selectedText: string, context?: string, processAI?: Function) => Promise<string>
+  action: (selectedText: string, context?: string) => Promise<string>
   type: 'translate' | 'summarize' | 'expand' | 'improve' | 'code' | 'fix'
 }
 
 // AI処理関数を受け取るファクトリー関数
-export function createAICommands(processAI: Function): AICommand[] {
+type ProcessAIFunction = (params: {
+  type: 'translate' | 'summarize' | 'expand' | 'improve' | 'code' | 'fix'
+  selectedText: string
+  context?: string
+  provider?: 'openai' | 'anthropic'
+}) => Promise<{ success: boolean; content?: string; error?: string }>
+
+export function createAICommands(processAI: ProcessAIFunction): AICommand[] {
   return [
     {
       id: 'translate',
@@ -35,7 +42,7 @@ export function createAICommands(processAI: Function): AICommand[] {
           })
           
           if (result.success) {
-            return result.content
+            return result.content || ''
           } else {
             throw new Error(result.error || '翻訳に失敗しました')
           }
@@ -61,7 +68,7 @@ export function createAICommands(processAI: Function): AICommand[] {
           })
           
           if (result.success) {
-            return result.content
+            return result.content || ''
           } else {
             throw new Error(result.error || '要約に失敗しました')
           }
@@ -87,7 +94,7 @@ export function createAICommands(processAI: Function): AICommand[] {
           })
           
           if (result.success) {
-            return result.content
+            return result.content || ''
           } else {
             throw new Error(result.error || '拡張に失敗しました')
           }
@@ -113,7 +120,7 @@ export function createAICommands(processAI: Function): AICommand[] {
           })
           
           if (result.success) {
-            return result.content
+            return result.content || ''
           } else {
             throw new Error(result.error || '改善に失敗しました')
           }
@@ -139,7 +146,7 @@ export function createAICommands(processAI: Function): AICommand[] {
           })
           
           if (result.success) {
-            return result.content
+            return result.content || ''
           } else {
             throw new Error(result.error || 'コード生成に失敗しました')
           }
@@ -165,7 +172,7 @@ export function createAICommands(processAI: Function): AICommand[] {
           })
           
           if (result.success) {
-            return result.content
+            return result.content || ''
           } else {
             throw new Error(result.error || '修正に失敗しました')
           }

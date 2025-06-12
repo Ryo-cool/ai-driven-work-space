@@ -7,13 +7,13 @@ import { useCallback, useEffect } from 'react'
 
 export function useDocument(documentId: Id<'documents'>, userId: Id<'users'>) {
   // Document queries and mutations
-  const document = useQuery(api.documents.getDocument, { documentId })
+  const document = useQuery(api.documents.getDocument, { id: documentId })
   const updateContent = useMutation(api.documents.updateContent)
   const updateTitle = useMutation(api.documents.updateTitle)
   
   // Collaboration queries and mutations
   const updatePresence = useMutation(api.collaboration.updatePresence)
-  const sendOperation = useMutation(api.collaboration.sendOperation)
+  const addOperation = useMutation(api.collaboration.addOperation)
   
   // Update user presence
   const updateUserPresence = useCallback(async (
@@ -25,10 +25,14 @@ export function useDocument(documentId: Id<'documents'>, userId: Id<'users'>) {
       await updatePresence({
         documentId,
         userId,
-        cursorPosition,
-        selectionStart,
-        selectionEnd,
-        isActive: true
+        cursor: {
+          position: cursorPosition,
+          selection: selectionStart !== undefined && selectionEnd !== undefined ? {
+            start: selectionStart,
+            end: selectionEnd
+          } : undefined
+        },
+        activity: 'typing'
       })
     } catch (error) {
       console.error('Failed to update presence:', error)
@@ -43,7 +47,7 @@ export function useDocument(documentId: Id<'documents'>, userId: Id<'users'>) {
     length?: number
   ) => {
     try {
-      await sendOperation({
+      await addOperation({
         documentId,
         userId,
         type,
@@ -54,7 +58,7 @@ export function useDocument(documentId: Id<'documents'>, userId: Id<'users'>) {
     } catch (error) {
       console.error('Failed to send operation:', error)
     }
-  }, [documentId, userId, sendOperation])
+  }, [documentId, userId, addOperation])
 
   // Update document content
   const updateDocumentContent = useCallback(async (content: string) => {
@@ -88,8 +92,10 @@ export function useDocument(documentId: Id<'documents'>, userId: Id<'users'>) {
       updatePresence({
         documentId,
         userId,
-        cursorPosition: 0,
-        isActive: false
+        cursor: {
+          position: 0
+        },
+        activity: 'idle'
       }).catch(console.error)
     }
   }, [documentId, userId, updatePresence])
