@@ -301,3 +301,32 @@ export const getUserById = query({
     return await ctx.db.get(userId)
   },
 })
+
+// 全ユーザー取得（デバッグ用）
+export const getAllUsers = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query('users').collect()
+  },
+})
+
+// テストユーザー作成（開発用）
+export const createTestUser = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await ctx.db.insert('users', {
+      email: 'test@example.com',
+      name: 'テストユーザー',
+      avatar: undefined,
+      color: '#3b82f6',
+      preferences: {
+        theme: 'light',
+        aiAssistance: true,
+        notifications: true,
+      },
+      createdAt: Date.now(),
+      lastActive: Date.now(),
+    })
+    return userId
+  },
+})

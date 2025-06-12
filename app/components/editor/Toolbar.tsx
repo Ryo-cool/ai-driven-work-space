@@ -4,6 +4,7 @@ import { Editor } from '@tiptap/react'
 import { 
   Bold, 
   Italic, 
+  Strikethrough,
   Underline, 
   List, 
   ListOrdered,
@@ -35,7 +36,14 @@ export default function Toolbar({ editor }: ToolbarProps) {
     title: string
   }) => (
     <button
-      onClick={onClick}
+      onMouseDown={(e) => {
+        e.preventDefault() // フォーカスの喪失を防ぐ
+      }}
+      onClick={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        onClick()
+      }}
       title={title}
       className={`
         p-2 rounded-md transition-all duration-200
@@ -55,21 +63,28 @@ export default function Toolbar({ editor }: ToolbarProps) {
         <ToolButton
           onClick={() => editor.chain().focus().toggleBold().run()}
           isActive={editor.isActive('bold')}
-          title="粗體"
+          title="太字"
         >
           <Bold size={18} />
         </ToolButton>
         <ToolButton
           onClick={() => editor.chain().focus().toggleItalic().run()}
           isActive={editor.isActive('italic')}
-          title="斜體"
+          title="斜体"
         >
           <Italic size={18} />
         </ToolButton>
         <ToolButton
           onClick={() => editor.chain().focus().toggleStrike().run()}
           isActive={editor.isActive('strike')}
-          title="刪除線"
+          title="削除線"
+        >
+          <Strikethrough size={18} />
+        </ToolButton>
+        <ToolButton
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
+          isActive={editor.isActive('underline')}
+          title="下線"
         >
           <Underline size={18} />
         </ToolButton>
@@ -79,21 +94,21 @@ export default function Toolbar({ editor }: ToolbarProps) {
         <ToolButton
           onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
           isActive={editor.isActive('heading', { level: 1 })}
-          title="標題 1"
+          title="見出し 1"
         >
           <Heading1 size={18} />
         </ToolButton>
         <ToolButton
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
           isActive={editor.isActive('heading', { level: 2 })}
-          title="標題 2"
+          title="見出し 2"
         >
           <Heading2 size={18} />
         </ToolButton>
         <ToolButton
           onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
           isActive={editor.isActive('heading', { level: 3 })}
-          title="標題 3"
+          title="見出し 3"
         >
           <Heading3 size={18} />
         </ToolButton>
@@ -103,21 +118,21 @@ export default function Toolbar({ editor }: ToolbarProps) {
         <ToolButton
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           isActive={editor.isActive('bulletList')}
-          title="項目符號列表"
+          title="箇条書きリスト"
         >
           <List size={18} />
         </ToolButton>
         <ToolButton
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
           isActive={editor.isActive('orderedList')}
-          title="編號列表"
+          title="番号付きリスト"
         >
           <ListOrdered size={18} />
         </ToolButton>
         <ToolButton
           onClick={() => editor.chain().focus().toggleCodeBlock().run()}
           isActive={editor.isActive('codeBlock')}
-          title="程式碼區塊"
+          title="コードブロック"
         >
           <Code size={18} />
         </ToolButton>

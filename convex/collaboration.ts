@@ -312,16 +312,36 @@ export const getYjsUpdates = query({
     documentId: v.id('documents'),
     since: v.optional(v.number()) // この時刻以降の更新のみ取得
   },
-  handler: async (ctx, { documentId, since = 0 }) => {
+  handler: async (ctx, { documentId, since }) => {
+    // sinceが指定されていない場合は空配列を返す（初期化は別クエリで行う）
+    if (since === undefined) {
+      return []
+    }
+
     const updates = await ctx.db
       .query('yjsUpdates')
       .withIndex('by_document_timestamp', (q) => 
         q.eq('documentId', documentId).gt('timestamp', since)
       )
       .order('asc')
-      .take(100) // 最大100件の更新
+      .take(50) // 最大50件の更新（リアルタイム用）
 
     return updates
+  },
+})
+
+// 最新のタイムスタンプ取得（初期化用）
+export const getLatestYjsTimestamp = query({
+  args: { documentId: v.id('documents') },
+  handler: async (ctx, { documentId }) => {
+    const latestUpdate = await ctx.db
+      .query('yjsUpdates')
+      .withIndex('by_document_timestamp', (q) => q.eq('documentId', documentId))
+      .order('desc')
+      .first()
+
+    // 更新が存在する場合はその時刻、存在しない場合は現在時刻を返す
+    return latestUpdate?.timestamp || Date.now()
   },
 })
 

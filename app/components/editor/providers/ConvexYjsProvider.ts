@@ -1,4 +1,5 @@
 import * as Y from 'yjs'
+import { Awareness } from 'y-protocols/awareness'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
@@ -17,12 +18,16 @@ export class ConvexYjsProvider {
   private connected: boolean = false
   private synced: boolean = false
   private updateMutation: ((params: { documentId: Id<'documents'>; userId: Id<'users'>; update: string; timestamp: number }) => Promise<unknown>) | null = null
-  private awareness: unknown = null
+  public awareness: Awareness
+  private appliedUpdates: Set<string> = new Set() // 適用済み更新を追跡
 
   constructor(options: ConvexYjsProviderOptions) {
     this.documentId = options.documentId
     this.userId = options.userId
     this.ydoc = options.ydoc
+    
+    // Awarenessの初期化
+    this.awareness = new Awareness(this.ydoc)
     
     // Y.jsドキュメントの変更を監視
     this.ydoc.on('update', this.handleYDocUpdate.bind(this))
@@ -56,7 +61,12 @@ export class ConvexYjsProvider {
     }
   }
 
-  applyUpdateFromConvex = (updateString: string, origin?: unknown) => {
+  applyUpdateFromConvex = (updateString: string, updateId: string, origin?: unknown) => {
+    // 既に適用済みの更新はスキップ
+    if (this.appliedUpdates.has(updateId)) {
+      return
+    }
+    
     try {
       // Base64文字列をUint8Arrayに変換
       const update = new Uint8Array(
@@ -65,6 +75,9 @@ export class ConvexYjsProvider {
       
       // Y.jsドキュメントに適用（originを設定して無限ループを防ぐ）
       Y.applyUpdate(this.ydoc, update, origin || this)
+      
+      // 適用済みとしてマーク
+      this.appliedUpdates.add(updateId)
     } catch (error) {
       console.error('Failed to apply update from Convex:', error)
     }
@@ -81,6 +94,7 @@ export class ConvexYjsProvider {
   disconnect = () => {
     this.connected = false
     this.ydoc.off('update', this.handleYDocUpdate)
+    this.awareness.destroy()
   }
 
   destroy = () => {
@@ -99,17 +113,45 @@ export function useConvexYjsProvider(
 ) {
   const ydocRef = useRef<Y.Doc | null>(null)
   const providerRef = useRef<ConvexYjsProvider | null>(null)
+  const lastProcessedTimestampRef = useRef<number | null>(null)
+  const isInitializedRef = useRef<boolean>(false)
   
   const sendUpdate = useMutation(api.collaboration.sendYjsUpdate)
-  const updates = useQuery(api.collaboration.getYjsUpdates, { documentId })
+  
+  // 初期化時に最新タイムスタンプを取得（一度だけ）
+  const latestTimestamp = useQuery(
+    api.collaboration.getLatestYjsTimestamp, 
+    !isInitializedRef.current ? { documentId } : 'skip'
+  )
+  
+  // 初期化後のリアルタイム更新を取得
+  const updates = useQuery(
+    api.collaboration.getYjsUpdates, 
+    lastProcessedTimestampRef.current !== null 
+      ? { documentId, since: lastProcessedTimestampRef.current }
+      : 'skip'
+  )
 
-  // Y.jsドキュメントの初期化
+  // 確実にY.jsドキュメントを初期化（一度だけ）
+  if (!ydocRef.current) {
+    ydocRef.current = new Y.Doc()
+    // デバッグ用: ドキュメントIDを設定
+    ydocRef.current.clientID = Math.floor(Math.random() * 2147483647)
+  }
+
+  // 初期化処理（現在時刻以降の更新のみを処理）
   useEffect(() => {
-    if (!ydocRef.current) {
-      ydocRef.current = new Y.Doc()
+    if (latestTimestamp !== undefined && !isInitializedRef.current) {
+      // 現在時刻を基準として、これ以降の更新のみを処理
+      const now = Date.now()
+      lastProcessedTimestampRef.current = now
+      isInitializedRef.current = true
     }
-    
-    if (!providerRef.current) {
+  }, [latestTimestamp])
+
+  // Y.jsプロバイダーの初期化
+  useEffect(() => {
+    if (!providerRef.current && ydocRef.current && isInitializedRef.current) {
       providerRef.current = new ConvexYjsProvider({
         documentId,
         userId,
@@ -120,19 +162,32 @@ export function useConvexYjsProvider(
     }
 
     return () => {
-      providerRef.current?.destroy()
-      ydocRef.current?.destroy()
+      if (providerRef.current) {
+        providerRef.current.destroy()
+        providerRef.current = null
+      }
     }
-  }, [documentId, userId, sendUpdate])
+  }, [documentId, userId, sendUpdate, isInitializedRef.current])
 
-  // Convexからの更新を適用
+  // Convexからの更新を適用（初期化後のリアルタイム更新のみ）
   useEffect(() => {
-    if (updates && providerRef.current) {
-      updates.forEach(update => {
-        providerRef.current?.applyUpdateFromConvex(update.data)
+    if (updates && updates.length > 0 && providerRef.current && isInitializedRef.current) {
+      // 自分以外のユーザーからの更新のみを適用
+      const otherUsersUpdates = updates.filter(update => update.userId !== userId)
+      
+      otherUsersUpdates.forEach(update => {
+        if (providerRef.current) {
+          providerRef.current.applyUpdateFromConvex(update.data, update._id)
+        }
       })
+      
+      // 最新のタイムスタンプを更新
+      if (updates.length > 0) {
+        const latestUpdateTimestamp = Math.max(...updates.map(u => u.timestamp))
+        lastProcessedTimestampRef.current = latestUpdateTimestamp
+      }
     }
-  }, [updates])
+  }, [updates, isInitializedRef.current])
 
   return {
     ydoc: ydocRef.current,
