@@ -11,15 +11,11 @@ export const seedTestData = mutation({
     const userId = await ctx.db.insert('users', {
       email: 'test@example.com',
       name: 'Test User',
-      avatar: null,
-      status: 'active',
+      color: '#FF6B6B',
       preferences: {
         theme: 'light',
-        language: 'ja',
-        notifications: {
-          email: true,
-          push: true,
-        },
+        aiAssistance: true,
+        notifications: true,
       },
       createdAt: now,
       lastActive: now,
@@ -30,11 +26,16 @@ export const seedTestData = mutation({
       name: 'My Workspace',
       description: 'デフォルトワークスペース',
       ownerId: userId,
-      members: [userId],
+      members: [{
+        userId: userId,
+        role: 'owner',
+        joinedAt: now,
+      }],
       settings: {
         isPublic: false,
-        allowInvites: true,
-        defaultPermission: 'view',
+        allowGuests: true,
+        aiEnabled: true,
+        maxCollaborators: 50,
       },
       createdAt: now,
       updatedAt: now,
