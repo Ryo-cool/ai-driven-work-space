@@ -12,7 +12,7 @@ export interface AICommand {
   name: string
   description: string
   icon: typeof Languages
-  action: (selectedText: string, context?: string) => Promise<string>
+  action: (selectedText: string, context?: string) => Promise<{ success: boolean; content?: string; error?: string }>
   type: 'translate' | 'summarize' | 'expand' | 'improve' | 'code' | 'fix'
 }
 
@@ -42,13 +42,13 @@ export function createAICommands(processAI: ProcessAIFunction): AICommand[] {
           })
           
           if (result.success) {
-            return result.content || ''
+            return result
           } else {
-            throw new Error(result.error || '翻訳に失敗しました')
+            return { success: false, error: result.error || '翻訳に失敗しました' }
           }
         } catch (error) {
           console.error('Translation failed:', error)
-          throw new Error('翻訳に失敗しました。後でもう一度お試しください。')
+          return { success: false, error: '翻訳に失敗しました。後でもう一度お試しください。' }
         }
       }
     },
@@ -68,13 +68,13 @@ export function createAICommands(processAI: ProcessAIFunction): AICommand[] {
           })
           
           if (result.success) {
-            return result.content || ''
+            return result
           } else {
-            throw new Error(result.error || '要約に失敗しました')
+            return { success: false, error: result.error || '要約に失敗しました' }
           }
         } catch (error) {
           console.error('Summarization failed:', error)
-          throw new Error('要約に失敗しました。後でもう一度お試しください。')
+          return { success: false, error: '要約に失敗しました。後でもう一度お試しください。' }
         }
       }
     },
@@ -94,13 +94,13 @@ export function createAICommands(processAI: ProcessAIFunction): AICommand[] {
           })
           
           if (result.success) {
-            return result.content || ''
+            return result
           } else {
-            throw new Error(result.error || '拡張に失敗しました')
+            return { success: false, error: result.error || '拡張に失敗しました' }
           }
         } catch (error) {
           console.error('Expansion failed:', error)
-          throw new Error('拡張に失敗しました。後でもう一度お試しください。')
+          return { success: false, error: '拡張に失敗しました。後でもう一度お試しください。' }
         }
       }
     },
@@ -120,13 +120,13 @@ export function createAICommands(processAI: ProcessAIFunction): AICommand[] {
           })
           
           if (result.success) {
-            return result.content || ''
+            return result
           } else {
-            throw new Error(result.error || '改善に失敗しました')
+            return { success: false, error: result.error || '改善に失敗しました' }
           }
         } catch (error) {
           console.error('Improvement failed:', error)
-          throw new Error('改善に失敗しました。後でもう一度お試しください。')
+          return { success: false, error: '改善に失敗しました。後でもう一度お試しください。' }
         }
       }
     },
@@ -146,13 +146,13 @@ export function createAICommands(processAI: ProcessAIFunction): AICommand[] {
           })
           
           if (result.success) {
-            return result.content || ''
+            return result
           } else {
-            throw new Error(result.error || 'コード生成に失敗しました')
+            return { success: false, error: result.error || 'コード生成に失敗しました' }
           }
         } catch (error) {
           console.error('Code generation failed:', error)
-          throw new Error('コード生成に失敗しました。後でもう一度お試しください。')
+          return { success: false, error: 'コード生成に失敗しました。後でもう一度お試しください。' }
         }
       }
     },
@@ -172,13 +172,13 @@ export function createAICommands(processAI: ProcessAIFunction): AICommand[] {
           })
           
           if (result.success) {
-            return result.content || ''
+            return result
           } else {
-            throw new Error(result.error || '修正に失敗しました')
+            return { success: false, error: result.error || '修正に失敗しました' }
           }
         } catch (error) {
           console.error('Fix failed:', error)
-          throw new Error('修正に失敗しました。後でもう一度お試しください。')
+          return { success: false, error: '修正に失敗しました。後でもう一度お試しください。' }
         }
       }
     }

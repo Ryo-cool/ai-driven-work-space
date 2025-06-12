@@ -650,6 +650,109 @@ export const callOpenAI = action({
 })
 
 
+// 強化されたコンテキスト情報を解析する関数
+function parseEnhancedContext(contextStr?: string) {
+  if (!contextStr) return null
+  
+  try {
+    return JSON.parse(contextStr)
+  } catch (error) {
+    console.warn('Failed to parse enhanced context:', error)
+    return null
+  }
+}
+
+// コンテキスト認識プロンプト生成
+function createContextAwarePrompt(
+  type: 'translate' | 'summarize' | 'expand' | 'improve' | 'code' | 'fix',
+  selectedText: string,
+  contextInfo: any
+): { system: string; user: string } {
+  // 基本プロンプト
+  const basePrompts: Record<string, { system: string; user: string }> = {
+    translate: {
+      system: 'あなたは多言語翻訳の専門家です。',
+      user: `以下のテキストを適切な言語に翻訳してください：\n\n${selectedText}`
+    },
+    summarize: {
+      system: 'あなたは要約の専門家です。',
+      user: `以下のテキストを簡潔に要約してください：\n\n${selectedText}`
+    },
+    expand: {
+      system: 'あなたは文章拡張の専門家です。',
+      user: `以下のテキストをより詳細に拡張してください：\n\n${selectedText}`
+    },
+    improve: {
+      system: 'あなたは文章改善の専門家です。',
+      user: `以下のテキストを改善してください：\n\n${selectedText}`
+    },
+    code: {
+      system: 'あなたはプログラミングの専門家です。',
+      user: `以下の要求に基づいてコードを生成してください：\n\n${selectedText}`
+    },
+    fix: {
+      system: 'あなたは文法とスペルチェックの専門家です。',
+      user: `以下のテキストの文法エラーやスペルミスを修正してください：\n\n${selectedText}`
+    }
+  }
+
+  if (!contextInfo) {
+    return basePrompts[type] || basePrompts.improve
+  }
+
+  // コンテキスト認識による強化
+  const { documentType, primaryLanguage, domain, beforeText, afterText, documentTitle } = contextInfo
+
+  // システムプロンプトにコンテキスト情報を追加
+  let enhancedSystem = basePrompts[type]?.system || basePrompts.improve.system
+  
+  if (domain === 'technology') {
+    enhancedSystem += '技術文書に適した専門用語と表現を使用してください。'
+  } else if (domain === 'business') {
+    enhancedSystem += 'ビジネス文書に適したフォーマルな表現を使用してください。'
+  } else if (domain === 'academic') {
+    enhancedSystem += '学術的で正確な表現を使用してください。'
+  }
+
+  if (documentType === 'code') {
+    enhancedSystem += 'コードの文脈を理解し、プログラミングベストプラクティスに従ってください。'
+  } else if (documentType === 'markdown') {
+    enhancedSystem += 'Markdown形式を保持し、適切な構造化を行ってください。'
+  }
+
+  // ユーザープロンプトにコンテキスト情報を追加
+  let enhancedUser = basePrompts[type]?.user || basePrompts.improve.user
+
+  // 翻訳の場合は言語を自動検出
+  if (type === 'translate') {
+    if (primaryLanguage === 'japanese') {
+      enhancedUser = `以下の日本語テキストを英語に翻訳してください：\n\n${selectedText}`
+    } else if (primaryLanguage === 'english') {
+      enhancedUser = `以下の英語テキストを日本語に翻訳してください：\n\n${selectedText}`
+    }
+  }
+
+  // 前後文脈の追加
+  if (beforeText || afterText) {
+    enhancedUser += '\n\n【コンテキスト情報】'
+    if (documentTitle) {
+      enhancedUser += `\nドキュメントタイトル: ${documentTitle}`
+    }
+    if (beforeText) {
+      enhancedUser += `\n前の文脈: ...${beforeText}`
+    }
+    if (afterText) {
+      enhancedUser += `\n後の文脈: ${afterText}...`
+    }
+    enhancedUser += '\n\n上記のコンテキストを考慮して処理してください。'
+  }
+
+  return {
+    system: enhancedSystem,
+    user: enhancedUser
+  }
+}
+
 // AI処理のメイン関数
 export const processAICommand = action({
   args: {
@@ -666,36 +769,13 @@ export const processAICommand = action({
     provider: v.optional(v.union(v.literal('openai'), v.literal('anthropic'))),
   },
   handler: async (ctx, { type, selectedText, context, provider = 'openai' }) => {
-    // プロンプトの生成
-    const prompts = {
-      translate: {
-        system: 'あなたは多言語翻訳の専門家です。与えられたテキストを自然で正確な日本語に翻訳してください。',
-        user: `以下のテキストを日本語に翻訳してください：\n\n${selectedText}`
-      },
-      summarize: {
-        system: 'あなたは要約の専門家です。与えられたテキストの要点を簡潔にまとめてください。',
-        user: `以下のテキストを簡潔に要約してください：\n\n${selectedText}`
-      },
-      expand: {
-        system: 'あなたは文章拡張の専門家です。与えられたテキストにより詳細な情報や説明を追加してください。',
-        user: `以下のテキストをより詳細に拡張してください：\n\n${selectedText}${context ? `\n\nコンテキスト：${context}` : ''}`
-      },
-      improve: {
-        system: 'あなたは文章改善の専門家です。与えられたテキストをより読みやすく、わかりやすく改善してください。',
-        user: `以下のテキストを改善してください：\n\n${selectedText}`
-      },
-      code: {
-        system: 'あなたはプログラミングの専門家です。与えられた要求に基づいてコードを生成してください。',
-        user: `以下の要求に基づいてコードを生成してください：\n\n${selectedText}`
-      },
-      fix: {
-        system: 'あなたは文法とスペルチェックの専門家です。与えられたテキストの文法エラーやスペルミスを修正してください。',
-        user: `以下のテキストの文法エラーやスペルミスを修正してください：\n\n${selectedText}`
-      }
-    }
-
-    const promptData = prompts[type]
-    const prompt = createAIPrompt(promptData.user, promptData.system, { maxTokens: 2000 })
+    // 強化されたコンテキスト情報を解析
+    const contextInfo = parseEnhancedContext(context)
+    
+    // コンテキスト認識プロンプトを生成
+    const { system, user } = createContextAwarePrompt(type, selectedText, contextInfo)
+    
+    const prompt = createAIPrompt(user, system, { maxTokens: 2000 })
     
     // AI API呼び出し（フォールバック機能付き）
     const result = await callAIWithFallback(prompt, provider)
