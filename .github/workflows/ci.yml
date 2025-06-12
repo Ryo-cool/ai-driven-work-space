@@ -90,7 +90,7 @@ jobs:
     timeout-minutes: 8
     strategy:
       matrix:
-        node-version: [18, 20]
+        node-version: [20]  # Mastraが20+を要求するため18は除外
       fail-fast: false
 
     steps:
