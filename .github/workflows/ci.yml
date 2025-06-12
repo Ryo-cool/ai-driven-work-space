@@ -8,6 +8,12 @@ on:
   # 手動実行も可能
   workflow_dispatch:
 
+# GitHub Token権限設定
+permissions:
+  contents: read
+  pull-requests: write
+  issues: read
+
 # 同時実行制御 - 同一PRで複数のワークフローが動かないように
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
