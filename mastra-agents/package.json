@@ -3,10 +3,18 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "mastra dev",
-    "build": "mastra build",
-    "start": "mastra start"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "dev": "nodemon --exec ts-node src/server.ts",
+    "dev:mastra": "mastra dev",
+    "build": "tsc && mastra build",
+    "start": "node dist/server.js",
+    "start:mastra": "mastra start",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --ext .ts,.tsx",
+    "clean": "rm -rf dist coverage",
+    "debug": "NODE_ENV=development LOG_LEVEL=debug nodemon --exec ts-node --inspect src/server.ts"
   },
   "keywords": [],
   "author": "",
@@ -21,11 +29,21 @@
     "@mastra/core": "^0.10.5",
     "@mastra/libsql": "^0.10.2",
     "@mastra/memory": "^0.10.3",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
     "zod": "^3.25.61"
   },
   "devDependencies": {
+    "@jest/globals": "^30.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/jest": "^29.5.14",
     "@types/node": "^24.0.0",
+    "jest": "^30.0.0",
     "mastra": "^0.10.5",
+    "nodemon": "^3.1.10",
+    "ts-jest": "^29.4.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   }
 }
