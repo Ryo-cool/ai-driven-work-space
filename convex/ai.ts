@@ -269,6 +269,11 @@ export const getAITaskById = query({
 
 // 実際のAI処理関数群
 async function processTextImprovement(text: string, context?: string): Promise<string> {
+  // TODO: Mastraエージェントとの統合
+  // Mastraワークフローの呼び出しは、この関数をアクションに変換するか、
+  // 別のアーキテクチャで実装する必要があります
+  
+  // 既存の処理（フォールバック）
   const userPrompt = context 
     ? `以下のテキストを改善してください。コンテキスト: ${context}\n\nテキスト: ${text}`
     : `以下のテキストを改善してください: ${text}`
@@ -287,6 +292,33 @@ async function processTextImprovement(text: string, context?: string): Promise<s
 }
 
 async function processTranslation(text: string, targetLanguage: string): Promise<string> {
+  // TODO: Mastraエージェントとの統合
+  // Mastraワークフローの呼び出しは、この関数をアクションに変換するか、
+  // 別のアーキテクチャで実装する必要があります
+  /*
+  if (process.env.USE_MASTRA_AGENTS === 'true') {
+    try {
+      const result = await executeMastraWorkflow({
+        workflowType: 'text-processing',
+        input: {
+          text,
+          operations: [{ 
+            type: 'translate', 
+            parameters: { targetLanguage, preserveFormatting: true } 
+          }],
+        }
+      })
+      
+      if (result.success && result.results?.[0]?.result) {
+        return result.results[0].result
+      }
+    } catch (error) {
+      console.error('Mastra translation failed, falling back to direct AI:', error)
+    }
+  }
+  */
+  
+  // 既存の処理（フォールバック）
   const languageMap: Record<string, string> = {
     ja: '日本語',
     en: '英語',
@@ -919,5 +951,44 @@ export const createAITaskWithLimits: ReturnType<typeof mutation> = mutation({
 
     // タスク作成
     return await ctx.runMutation(api.ai.createAITask, args)
+  },
+})
+
+// Mastraワークフロー実行 (新規追加)
+export const executeMastraWorkflow = action({
+  args: {
+    workflowType: v.string(),
+    input: v.any(),
+  },
+  handler: async (ctx, { workflowType, input }) => {
+    try {
+      // Mastraエージェントエンドポイントへのリクエスト
+      const mastraEndpoint = process.env.MASTRA_ENDPOINT || 'http://localhost:3001'
+      
+      const response = await fetch(`${mastraEndpoint}/api/workflows/${workflowType}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.MASTRA_API_KEY || ''}`,
+        },
+        body: JSON.stringify(input),
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Mastra workflow failed: ${response.status}`)
+      }
+      
+      const result = await response.json()
+      return {
+        success: true,
+        ...result,
+      }
+    } catch (error) {
+      console.error('Mastra workflow execution error:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
+    }
   },
 })
